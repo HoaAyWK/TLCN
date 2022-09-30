@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { compare, hash } = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
@@ -53,6 +54,8 @@ const userSchema = new mongoose.Schema({
         required: true,
         default: ['freelancer']
     },
+    confirmationEmailToken: String,
+    confirmationEmailTokenExpire: Date,
     resetPasswordToken: String,
     resetPasswordExpire: Date
 }, { timestamps: true });
@@ -63,7 +66,11 @@ userSchema.pre('save', async function(next) {
     }
 
     this.password = await hash(this.password, 10);
-})
+});
+
+userSchema.methods.comparePassword = async function (enteredPassword) {
+    return await compare(enteredPassword, this.password);
+};
 
 userSchema.methods.getJwtToken = function() {
     return jwt.sign(
@@ -75,6 +82,30 @@ userSchema.methods.getJwtToken = function() {
             expiresIn: process.env.JWT_EXPIRES_TIME
         }
     );
+};
+
+userSchema.methods.getConfirmationEmailToken = function() {
+    const token = crypto.randomBytes(20).toString('hex');
+    this.confirmationEmailToken = crypto
+        .createHash('sha256')
+        .update(token)
+        .digest('hex');
+
+    this.confirmationEmailTokenExpire = Date.now() + 30 * 60 * 1000;
+
+    return token;
+};
+
+userSchema.methods.getResetPasswordToken = function() {
+    const resetToken = crypto.randomBytes(20).toString('hex');
+    this.resetPasswordToken = crypto
+        .createHash('sha256')
+        .update(resetToken)
+        .digest('hex');
+
+    this.resetPasswordExpire = Date.now() + 30 * 60 * 1000;
+
+    return resetToken;
 };
 
 module.exports = mongoose.model('User', userSchema);
