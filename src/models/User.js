@@ -1,3 +1,4 @@
+const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
@@ -13,11 +14,6 @@ const userSchema = new mongoose.Schema({
     },
     gooleId: {
         type: String
-    },
-    username: {
-        type: String,
-        required: true,
-        default: this.email
     },
     emailConfirmed: {
         type: Boolean,
@@ -56,5 +52,17 @@ const userSchema = new mongoose.Schema({
     resetPasswordToken: String,
     resetPasswordExpire: Date
 }, { timestamps: true });
+
+userSchema.methods.getJwtToken = function() {
+    return jwt.sign(
+        { 
+            id: this._id
+        },
+        process.env.JWT_SECRET,
+        {
+            expiresIn: process.env.JWT_EXPIRES_TIME
+        }
+    );
+};
 
 module.exports = mongoose.model('User', userSchema);
