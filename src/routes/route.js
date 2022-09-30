@@ -2,4 +2,4 @@ const route = (app) => {
     
 } 
 
-module.exports = route
+module.exports = route;
