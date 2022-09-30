@@ -1,10 +1,11 @@
 const { hash, compare } = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
 const ErrorHandler = require('../utils/errorHandler');
 const User = require('../models/User');
 
-exports.register = async (req, res, next) => {
+exports.register = catchAsyncErrors(async (req, res, next) => {
     const { email, password } = req.body;
 
     const userExist = await User.findOne({ email }).lean();
@@ -21,9 +22,9 @@ exports.register = async (req, res, next) => {
         success: true,
         user
     });
-};
+});
 
-exports.login = async (req, res, next) => {
+exports.login = catchAsyncErrors(async (req, res, next) => {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email }).select('+password').lean();
@@ -42,4 +43,4 @@ exports.login = async (req, res, next) => {
         success: true,
         user
     });
-};
+});
