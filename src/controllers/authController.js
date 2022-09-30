@@ -1,5 +1,3 @@
-const { hash, compare } = require('bcryptjs');
-
 const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
 const ErrorHandler = require('../utils/errorHandler');
 const User = require('../models/User');
@@ -18,8 +16,7 @@ exports.register = catchAsyncErrors(async (req, res, next) => {
         return next(new ErrorHandler('Email already in use.', 400));
     }
 
-    const hashedPassword = await hash(password, 10);
-    const newUser = new User({ email, password: hashedPassword });
+    const newUser = new User({ email, password });
     const user = await newUser.save();
 
     sendToken(user, 200, res);

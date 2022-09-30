@@ -1,11 +1,14 @@
+const { compare, hash } = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const validator = require('validator');
 
 const userSchema = new mongoose.Schema({
     email: {
         type: String,
         required: () => this.provider !== 'email' ? false : [true, 'Email is required'],
         unique: true,
+        validate: [validator.isEmail, 'Email must be valid.']
     },
     provider: {
         type: String,
@@ -32,7 +35,8 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: () => this.provider !== 'email' ? false : [true, 'Password is required.'],
-        select: false
+        select: false,
+        minLength: [6, 'Password must be at least 6 characters.']
     },
     avatar: {
         public_id: {
@@ -52,6 +56,14 @@ const userSchema = new mongoose.Schema({
     resetPasswordToken: String,
     resetPasswordExpire: Date
 }, { timestamps: true });
+
+userSchema.pre('save', async function(next) {
+    if (this.password === null || !this.isModified('password')) {
+        next();
+    }
+
+    this.password = await hash(this.password, 10);
+})
 
 userSchema.methods.getJwtToken = function() {
     return jwt.sign(
