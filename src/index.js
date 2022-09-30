@@ -1,18 +1,19 @@
-const express = require('express')
-app = express()
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
 
-const cors = require('cors')
-const port = 5000
-const route = require('./routers/route')
-require('dotenv').config()
+const route = require('./routes/route');
+const { connectDatabase } = require('./config/database');
 
-const db = require('./database/connect')
-db.connectDB()
+const app = express();
+const PORT = process.env.PORT || 5000;
+console.log(PORT);
 
-app.use(express.json())
-app.use(cors())
+app.use(express.json());
+app.use(cors());
 
-route(app)
+route(app);
 
+connectDatabase();
 
-app.listen(port, () => console.log(`http://localhost:${port}`))
+app.listen(PORT, () => console.log(`Server listenning on port: ${PORT} in ${process.env.NODE_ENV} mode.`));
