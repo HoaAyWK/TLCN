@@ -47,28 +47,6 @@ exports.register = catchAsyncErrors(async (req, res, next) => {
     }
 });
 
-exports.login = catchAsyncErrors(async (req, res, next) => {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-        return next(new ErrorHandler('Email and Password are required.'));
-    }
-
-    const user = await User.findOne({ email }).select('+password');
-
-    if (!user) {
-        return next(new ErrorHandler('User not found', 404));
-    }
-
-    const isPasswordMatched = await user.comparePassword(password);
-
-    if (!isPasswordMatched) {
-        return next(new ErrorHandler('Email or password incorrect.'));
-    }
-
-    sendToken(user, 200, res);
-});
-
 exports.confirmEmail = catchAsyncErrors(async (req, res, next) => {
     const confirmationEmailToken = crypto
         .createHash('sha256')
@@ -88,6 +66,32 @@ exports.confirmEmail = catchAsyncErrors(async (req, res, next) => {
     user.confirmationEmailToken = undefined;
     user.confirmationEmailTokenExpire = undefined;
     await user.save({ validateBeforeSave: false });
+
+    sendToken(user, 200, res);
+});
+
+exports.login = catchAsyncErrors(async (req, res, next) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return next(new ErrorHandler('Email and Password are required.'));
+    }
+
+    const user = await User.findOne({ email }).select('+password');
+
+    if (!user) {
+        return next(new ErrorHandler('User not found', 404));
+    }
+
+    if (!user.emailConfirmed) {
+        return next(new ErrorHandler('Your email is not confirmed. Please confirm your email!', 400));
+    }
+
+    const isPasswordMatched = await user.comparePassword(password);
+
+    if (!isPasswordMatched) {
+        return next(new ErrorHandler('Email or password incorrect.'));
+    }
 
     sendToken(user, 200, res);
 });
