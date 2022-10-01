@@ -1,3 +1,5 @@
+const cloudinary = require('cloudinary');
+
 const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
 const ErrorHandler = require('../utils/errorHandler');
 const User = require('../models/User');
