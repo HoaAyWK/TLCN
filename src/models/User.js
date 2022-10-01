@@ -60,7 +60,7 @@ const userSchema = new mongoose.Schema({
         default: 'Unactivated',
         enum: {
             values: [
-                'Unactivaed',
+                'Unactivated',
                 'Active',
                 'Banned',
                 'Deleted'
