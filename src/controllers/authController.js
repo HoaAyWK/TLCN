@@ -95,3 +95,81 @@ exports.login = catchAsyncErrors(async (req, res, next) => {
 
     sendToken(user, 200, res);
 });
+
+exports.forgotPassword = catchAsyncErrors(async (req, res, next) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return next(new ErrorHandler('Please enter email!', 400));
+    }
+
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+        return next(new ErrorHandler('User not found.', 404));
+    }
+
+    const resetToken = user.getResetPasswordToken();
+    await user.save({ validateBeforeSave: false });
+    const resetUrl = `${req.protocol}://${req.get('host')}/api/v1/password/reset/${resetToken}`;
+    const message = `Your password reset token is as follow:\n\n${resetUrl}\n\nIf you have not requested this email, then ignore it.`;
+
+    try {
+        await sendEmail({
+            email: user.email,
+            subject: 'Frl password recovery',
+            message
+        });
+
+        res.status(200).json({
+            success: true,
+            message: `Email sent to: ${user.email}`
+        });
+    } catch (error) {
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpire = undefined;
+        await user.save({ validateBeforeSave: false });
+
+        next(createError(500, error.message));
+    }
+});
+
+exports.resetPassword = catchAsyncErrors(async (req, res, next) => {
+    const resetPasswordToken = crypto
+        .createHash('sha256')
+        .update(req.params.token)
+        .digest('hex');
+    
+    const user = await User.findOne({
+        resetPasswordToken,
+        resetPasswordExpire: { $gt: Date.now() }
+    });
+
+    if (!user) {
+        return next(new ErrorHandler('Password reset token invalid or has been expired.', 400));
+    }
+
+    const { password, confirmPassword } = req.body;
+
+    if (password !== confirmPassword) {
+        return next(new ErrorHandler('Password does not match.', 400));
+    }
+
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+    sendToken(user, 200, res);
+});
+
+exports.logout = catchAsyncErrors(async (req, res, next) => {
+    res.cookie('token', null, {
+        expires: new Date(Date.now()),
+        httpOnly: true
+    });
+
+    res.status(200).json({
+        success: true,
+        message: 'Logged out'
+    });
+});
