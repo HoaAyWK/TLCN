@@ -8,7 +8,7 @@ const sendToken = (user, statusCode, res) => {
         httpOnly: true
     };
 
-    const { password, ...userDetails } = user._doc;
+    const { __v, password, ...userDetails } = user._doc;
 
     res.status(statusCode).cookie('token', token, options).json({
         success: true,
