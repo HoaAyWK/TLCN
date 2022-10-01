@@ -71,10 +71,6 @@ exports.deleteUser = catchAsyncErrors(async (req, res, next) => {
 });
 
 exports.getUserProfile = catchAsyncErrors(async (req, res, next) => {
-    if (!req.user) {
-        return next(new ErrorHandler('Your are not logged in', 400));
-    }
-
     const user = await User.findById(req.user._id,
             '_id firstName lastName email status emailConfirmed roles avatar')
         .lean();
@@ -135,19 +131,19 @@ exports.changePassword = catchAsyncErrors(async (req, res, next) => {
     const { oldPassword, newPassword } = req.body;
 
     if (!oldPassword || !newPassword) {
-        return next(createError(400, 'Old Password and New Password are required.'));
+        return next(new ErrorHandler('Old Password and New Password are required.', 400));
     }
 
     const user = await User.findById(req.user._id).select('+password');
 
     if (!user) {
-        return next(createError(404, 'User not found.'));
+        return next(new ErrorHandler('User not found.', 404));
     }
 
     const isPasswordMatching = await user.comparePassword(oldPassword);
 
     if (!isPasswordMatching) {
-        return next(createError(400, 'Wrong password!'));
+        return next(new ErrorHandler('Wrong password!', 400));
     }
 
     user.password = newPassword;
