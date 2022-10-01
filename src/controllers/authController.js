@@ -5,7 +5,6 @@ const ErrorHandler = require('../utils/errorHandler');
 const User = require('../models/User');
 const sendEmail = require('../services/sendEmail');
 const sendToken = require('../utils/sendToken');
-const { send } = require('process');
 
 exports.register = catchAsyncErrors(async (req, res, next) => {
     const { email, password } = req.body;
@@ -62,6 +61,7 @@ exports.confirmEmail = catchAsyncErrors(async (req, res, next) => {
         return next(new ErrorHandler('Confirmation email token invalid or has been expired.', 400));
     }
 
+    user.status = 'Active';
     user.emailConfirmed = true;
     user.confirmationEmailToken = undefined;
     user.confirmationEmailTokenExpire = undefined;

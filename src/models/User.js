@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema({
     },
     emailConfirmed: {
         type: Boolean,
-        default: this.provider !== 'email' ? false : true
+        default: this.provider !== 'email' ? true : false
     },
     firstName: {
         type: String,
@@ -53,6 +53,19 @@ const userSchema = new mongoose.Schema({
         type: [String],
         required: true,
         default: ['freelancer']
+    },
+    status: {
+        type: String,
+        required: true,
+        default: 'Unactivated',
+        enum: {
+            values: [
+                'Unactivaed',
+                'Active',
+                'Banned',
+                'Deleted'
+            ]
+        }
     },
     confirmationEmailToken: String,
     confirmationEmailTokenExpire: Date,
