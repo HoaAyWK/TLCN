@@ -28,12 +28,14 @@ exports.authorizeRoles = (...roles) => {
             return next();
         }
     } else {
-        for (let r of roles) {
-            if (req.user.roles.includes(r)) {
-                return next();
+        return (req, res, next) => {
+            for (let r of roles) {
+                if (req.user.roles.includes(r)) {
+                    return next();
+                }
             }
+    
+            return next(new ErrorHandler('You do not have permission to access this resource.', 403));
         }
-
-        return next(new ErrorHandler('You do not have permission to access this resource.', 403));
     }
 }
