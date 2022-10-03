@@ -137,7 +137,7 @@ exports.forgotPassword = catchAsyncErrors(async (req, res, next) => {
         user.resetPasswordExpire = undefined;
         await user.save({ validateBeforeSave: false });
 
-        next(createError(500, error.message));
+        next(new ErrorHandler(error.message, 500));
     }
 });
 
