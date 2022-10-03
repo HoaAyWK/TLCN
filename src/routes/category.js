@@ -14,8 +14,11 @@ const router = Router();
 router.route('/categories').get(getAllCategoriesWithChildren);
 router.route('/categories/:id').get(getCategoryDetail);
 
-router.route('/admin/categories/create').post(isAuthenticated, authorizeRoles('admin'), createCategory);
-router.route('/admin/categories/update/:id').put(isAuthenticated, authorizeRoles('admin'), updateCategory);
-router.route('/admin/categories/delete/:id').delete(isAuthenticated, authorizeRoles('admin'), deleteCategory);
+router.route('/admin/categories/create')
+    .post(isAuthenticated, authorizeRoles('admin'), createCategory);
+
+router.route('/admin/categories/:id')
+    .put(isAuthenticated, authorizeRoles('admin'), updateCategory)
+    .delete(isAuthenticated, authorizeRoles('admin'), deleteCategory);
 
 module.exports = router;
