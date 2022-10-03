@@ -3,25 +3,30 @@ const crypto = require('crypto');
 const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
 const ErrorHandler = require('../utils/errorHandler');
 const User = require('../models/User');
+const UserData = require('../models/UserData');
 const sendEmail = require('../services/sendEmail');
 const sendToken = require('../utils/sendToken');
 
 exports.register = catchAsyncErrors(async (req, res, next) => {
-    const { email, password } = req.body;
+    const { email, password, phone } = req.body;
 
-    if (!email || !password) {
-        return next(new ErrorHandler('Email and Password are required.'));
+    if (!email || !password || !phone) {
+        return next(new ErrorHandler('Email, Phone, and Password are required'));
     }
 
     const userExist = await User.findOne({ email }).lean();
 
     if (userExist) {
-        return next(new ErrorHandler('Email already in use.', 400));
+        return next(new ErrorHandler('Email already in use', 400));
     }
 
-    const newUser = new User({ email, password });
+    const newUser = new User({ email, password, phone });
+    const userData = new UserData({ user: newUser._id });
     const token = newUser.getConfirmationEmailToken();
+
     const user = await newUser.save();
+    await userData.save();
+
     const confirmationEmailUrl = `${req.protocol}://${req.get('host')}/api/v1/email/confirm/${token}`;
     const message = `Your confirmation email token is as follow:\n\n${confirmationEmailUrl}\n\nIf you have not requested this email, then ignore it.`;
 
@@ -55,10 +60,10 @@ exports.confirmEmail = catchAsyncErrors(async (req, res, next) => {
     const user = await User.findOne({
         confirmationEmailToken,
         confirmationEmailTokenExpire: { $gt: Date.now() }
-    });
+    }).select('+confirmationEmailToken +confirmationEmailTokenExpire');
 
     if (!user) {
-        return next(new ErrorHandler('Confirmation email token invalid or has been expired.', 400));
+        return next(new ErrorHandler('Confirmation email token invalid or has been expired', 400));
     }
 
     user.status = 'Active';
@@ -74,7 +79,7 @@ exports.login = catchAsyncErrors(async (req, res, next) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-        return next(new ErrorHandler('Email and Password are required.'));
+        return next(new ErrorHandler('Email and Password are required'));
     }
 
     const user = await User.findOne({ email }).select('+password');
@@ -90,7 +95,7 @@ exports.login = catchAsyncErrors(async (req, res, next) => {
     const isPasswordMatched = await user.comparePassword(password);
 
     if (!isPasswordMatched) {
-        return next(new ErrorHandler('Email or password incorrect.'));
+        return next(new ErrorHandler('Email or password incorrect'));
     }
 
     sendToken(user, 200, res);
@@ -103,11 +108,13 @@ exports.forgotPassword = catchAsyncErrors(async (req, res, next) => {
         return next(new ErrorHandler('Please enter email!', 400));
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+resetPasswordToken +resetPasswordExpire');
     
     if (!user) {
-        return next(new ErrorHandler('User not found.', 404));
+        return next(new ErrorHandler('User not found', 404));
     }
+
+    console.log(user);
 
     const resetToken = user.getResetPasswordToken();
     await user.save({ validateBeforeSave: false });
@@ -143,7 +150,7 @@ exports.resetPassword = catchAsyncErrors(async (req, res, next) => {
     const user = await User.findOne({
         resetPasswordToken,
         resetPasswordExpire: { $gt: Date.now() }
-    });
+    }).select('+resetPasswordToken +resetPasswordExpire');
 
     if (!user) {
         return next(new ErrorHandler('Password reset token invalid or has been expired.', 400));

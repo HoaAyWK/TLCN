@@ -7,17 +7,9 @@ const validator = require('validator');
 const userSchema = new mongoose.Schema({
     email: {
         type: String,
-        required: () => this.provider !== 'email' ? false : [true, 'Email is required'],
+        required: [true, 'Email is required'],
         unique: true,
-        validate: [validator.isEmail, 'Email must be valid.']
-    },
-    provider: {
-        type: String,
-        required: true,
-        default: 'email'
-    },
-    gooleId: {
-        type: String
+        validate: [validator.isEmail, 'Email must be valid']
     },
     emailConfirmed: {
         type: Boolean,
@@ -26,18 +18,18 @@ const userSchema = new mongoose.Schema({
     firstName: {
         type: String,
         required: false,
-        maxLength: [100, 'First name must not be logger than 100 characters.']
+        maxLength: [100, 'First name must not be logger than 100 characters']
     },
     lastName: {
         type: String,
         required: false,
-        maxLength: [100, 'Last name must not be logger than 100 characters.']
+        maxLength: [100, 'Last name must not be logger than 100 characters']
     },
     password: {
         type: String,
-        required: () => this.provider !== 'email' ? false : [true, 'Password is required.'],
+        required: [true, 'Password is required'],
         select: false,
-        minLength: [6, 'Password must be at least 6 characters.']
+        minLength: [6, 'Password must be at least 6 characters']
     },
     avatar: {
         public_id: {
@@ -67,10 +59,36 @@ const userSchema = new mongoose.Schema({
             ]
         }
     },
-    confirmationEmailToken: String,
-    confirmationEmailTokenExpire: Date,
-    resetPasswordToken: String,
-    resetPasswordExpire: Date
+    gender: {
+        type: String,
+        required: [true, 'Gender is required'],
+        default: 'None'
+    },
+    phone: {
+        type: String,
+        required: [true, 'Phone is required']
+    },
+    address: String,
+    city: String,
+    country: String,
+    introduction: String,
+    experience: String,
+    confirmationEmailToken: {
+        type: String,
+        select: false
+    },
+    confirmationEmailTokenExpire: {
+        type: Date,
+        select: false
+    },
+    resetPasswordToken: {
+        type: String,
+        select: false
+    },
+    resetPasswordExpire: {
+        type: Date,
+        select: false
+    } 
 }, { timestamps: true });
 
 userSchema.pre('save', async function(next) {
