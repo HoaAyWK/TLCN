@@ -3,7 +3,7 @@ const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
 const ErrorHandler = require('../utils/errorHandler');
 
 exports.getPoints = catchAsyncErrors(async (req, res, next) => {
-    const points = await Point.find({}, '_id name description amount').lean();
+    const points = await Point.find({}, '-__v').lean();
 
     res.status(200).json({
         success: true,
@@ -13,10 +13,10 @@ exports.getPoints = catchAsyncErrors(async (req, res, next) => {
 });
 
 exports.getPoint = catchAsyncErrors(async (req, res, next) => {
-    const point = await Point.findById(req.params.id, '_id name description amount').lean();
+    const point = await Point.findById(req.params.id, '-__v').lean();
 
     if (!point) {
-        return next(new ErrorHandler('Point not found.', 404));
+        return next(new ErrorHandler('Point not found', 404));
     }
 
     res.status(200).json({
@@ -40,7 +40,7 @@ exports.deletePoint = catchAsyncErrors(async (req, res, next) => {
     const point = await Point.findById(req.params.id);
 
     if (!point) {
-        return next(new ErrorHandler('Point not found.', 404));
+        return next(new ErrorHandler('Point not found', 404));
     }
 
     // TODO: check if there is any payment reference to

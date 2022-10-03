@@ -7,8 +7,8 @@ const sendToken = require('../utils/sendToken');
 
 
 exports.getAllUsers = catchAsyncErrors(async (req, res, next) => {
-    const users = await User.find({}, 
-            '_id firstName lastName email status emailConfirmed roles avatar')
+    const users = await User.find()
+        .select('-__v')
         .lean();
 
     res.status(200).json({
@@ -19,13 +19,12 @@ exports.getAllUsers = catchAsyncErrors(async (req, res, next) => {
 });
 
 exports.getUserDetails = catchAsyncErrors(async (req, res, next) => {
-    const user = await User.findById(
-            req.params.id,
-            '_id firstName lastName email status emailConfirmed roles avatar')
+    const user = await User.findById(req.params.id)
+        .select('-__v')
         .lean();
 
     if (!user) {
-        return next(new ErrorHandler('User not found.', 404));
+        return next(new ErrorHandler('User not found', 404));
     }
 
     res.status(200).json({
@@ -35,50 +34,44 @@ exports.getUserDetails = catchAsyncErrors(async (req, res, next) => {
 });
 
 exports.banUser = catchAsyncErrors(async (req, res, next) => {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id).select('-__v');
 
     if (!user) {
-        return next(new ErrorHandler('User not found.', 404));
+        return next(new ErrorHandler('User not found', 404));
     }
 
     user.status = 'Banned';
-    const savedUser = await user
-        .save({ validateBeforeSave: false })
-        .select('_id firstName lastName email status emailConfirmed roles avatar')
-        .lean();
+    await user.save({ validateBeforeSave: false })
     
     res.status(200).json({
         success: true,
-        user: savedUser
+        user
     });
 });
 
 exports.deleteUser = catchAsyncErrors(async (req, res, next) => {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id).select('-__v');
 
     if (!user) {
-        return next(new ErrorHandler('User not found.', 404));
+        return next(new ErrorHandler('User not found', 404));
     }
 
     user.status = 'Deleted';
-    const savedUser = await user
-        .save({ validateBeforeSave: false })
-        .select('_id firstName lastName email status emailConfirmed roles avatar')
-        .lean();
+    await user.save({ validateBeforeSave: false });
     
     res.status(200).json({
         success: true,
-        user: savedUser
+        user
     });
 });
 
 exports.getUserProfile = catchAsyncErrors(async (req, res, next) => {
-    const user = await User.findById(req.user._id,
-            '_id firstName lastName email status emailConfirmed roles avatar')
+    const user = await User.findById(req.user._id)
+        .select('-__v')
         .lean();
     
     if (!user) {
-        return next(new ErrorHandler('User not found!', 404));
+        return next(new ErrorHandler('User not found', 404));
     }
 
     res.status(200).json({
@@ -120,7 +113,7 @@ exports.updateUserProfile = catchAsyncErrors(async (req, res, next) => {
                 runValidators: true
             }
         )
-        .select('_id firstName lastName email emailConfirmed status roles avatar')
+        .select('-__v')
         .lean();
 
     res.status(200).json({
@@ -133,13 +126,13 @@ exports.changePassword = catchAsyncErrors(async (req, res, next) => {
     const { oldPassword, newPassword } = req.body;
 
     if (!oldPassword || !newPassword) {
-        return next(new ErrorHandler('Old Password and New Password are required.', 400));
+        return next(new ErrorHandler('Old Password and New Password are required', 400));
     }
 
     const user = await User.findById(req.user._id).select('+password');
 
     if (!user) {
-        return next(new ErrorHandler('User not found.', 404));
+        return next(new ErrorHandler('User not found', 404));
     }
 
     const isPasswordMatching = await user.comparePassword(oldPassword);
@@ -157,7 +150,7 @@ exports.deleteMyAccount = catchAsyncErrors(async (req, res, next) => {
     const user = await User.findById(req.user._id);
 
     if (!user) {
-        return next(new ErrorHandler('User not found.', 404));
+        return next(new ErrorHandler('User not found', 404));
     }
 
     user.status = 'Deleted';
@@ -165,6 +158,6 @@ exports.deleteMyAccount = catchAsyncErrors(async (req, res, next) => {
     
     res.status(200).json({
         success: true,
-        user: 'Deleted account.'
+        user: 'Deleted account'
     });
 });

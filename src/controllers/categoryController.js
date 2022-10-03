@@ -6,8 +6,8 @@ const ErrorHandler = require('../utils/errorHandler');
 
 exports.getAllCategoriesWithChildren = catchAsyncErrors(async (req, res, next) => {
     const categories = await Category.find({ parent: undefined }, 
-        '_id name children')
-        .populate({ path: 'children', select: '_id name'})
+        '-__v -createdAt -updatedAt')
+        .populate({ path: 'children', select: '-__v -createdAt -updatedAt'})
         .lean();
 
     res.status(200).json({
@@ -20,11 +20,11 @@ exports.getCategoryDetail = catchAsyncErrors(async (req, res, next) => {
     const category = await Category.findById(
             req.params.id, 
             '_id name description image parent')
-        .populate('children', '_id name description image children')
+        .populate('children', '-__v')
         .lean();
     
     if (!category) {
-        return next(new ErrorHandler('Category not found.', 404));
+        return next(new ErrorHandler('Category not found', 404));
     }
     
     res.status(200).json({
@@ -37,7 +37,7 @@ exports.createCategory = catchAsyncErrors(async (req, res, next) => {
     const { name, description, image, parent } = req.body;
 
     if (!name) {
-        return next(new ErrorHandler('Name is required.', 400));
+        return next(new ErrorHandler('Name is required', 400));
     }
 
     let parentCategory = undefined;
@@ -46,7 +46,7 @@ exports.createCategory = catchAsyncErrors(async (req, res, next) => {
         parentCategory = await Category.findById(parent);
 
         if (!parentCategory) {
-            return next(new ErrorHandler('Parent category not found.', 404));
+            return next(new ErrorHandler('Parent category not found', 404));
         }
     } 
 
@@ -86,10 +86,10 @@ exports.createCategory = catchAsyncErrors(async (req, res, next) => {
 exports.updateCategory = catchAsyncErrors(async (req, res, next) => {
     const id = req.params.id;
     const { name, description, image, parent } = req.body;
-    const category = await Category.findById(id);
+    const category = await Category.findById(id).select('-__v');
 
     if (!category) {
-        return next(new ErrorHandler('Category not found.', 404));
+        return next(new ErrorHandler('Category not found', 404));
     }
 
     if (parent && category.children.length > 0) {
@@ -102,7 +102,7 @@ exports.updateCategory = catchAsyncErrors(async (req, res, next) => {
         parentCategory = await Category.findById(parent);
 
         if (!parentCategory) {
-            return next(new ErrorHandler('Parent category not found.', 404));
+            return next(new ErrorHandler('Parent category not found', 404));
         }
     }
 
@@ -136,7 +136,7 @@ exports.updateCategory = catchAsyncErrors(async (req, res, next) => {
                 runValidators: true
             }
         )
-        .select('_id name description image parent children')
+        .select('-__v')
         .lean();
     
     if (parentCategory) {
@@ -155,7 +155,7 @@ exports.deleteCategory = catchAsyncErrors(async (req, res, next) => {
     const category = await Category.findById(id);
 
     if (!category) {
-        return next(new ErrorHandler('Category not found.', 404));
+        return next(new ErrorHandler('Category not found', 404));
     }
 
     if (category.children.length > 0) {
@@ -169,7 +169,7 @@ exports.deleteCategory = catchAsyncErrors(async (req, res, next) => {
         const parentCategory = await Category.findById(category.parent);
 
         if (!parentCategory) {
-            return next(new ErrorHandler('Parent category not found.', 404));
+            return next(new ErrorHandler('Parent category not found', 404));
         }
 
         parentCategory.children.filter(item => item !== id);
