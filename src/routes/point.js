@@ -15,7 +15,7 @@ router.route('/points/:id').get(getPoint);
 router.route('/admin/points/create')
     .post(isAuthenticated, authorizeRoles('admin'), createPoint);
 
-router.route('/admin/points/delete/:id')
+router.route('/admin/points/:id')
     .delete(isAuthenticated, authorizeRoles('admin'), deletePoint);
 
 module.exports = router;
