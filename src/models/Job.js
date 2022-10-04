@@ -79,14 +79,26 @@ const jobSchema = new mongoose.Schema({
                 'Open',
                 'Processing',
                 'Closed',
-                'Canceled',
+                'Cancelled',
                 'Expired'
             ]
         }
     },
     requests: [
         requestSchema
-    ]
+    ],
+    assignment: {
+        freelancer: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+        },
+        files: {
+            type: String
+        },
+        deadline: {
+            type: Date
+        }
+    }
 });
 
 module.exports = mongoose.model('Job', jobSchema);

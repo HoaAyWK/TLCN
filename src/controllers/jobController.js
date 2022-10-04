@@ -259,20 +259,29 @@ exports.selectFreelancer = catchAsyncErrors(async (req, res, next) => {
         return next(new ErrorHandler('Job not found', 404));
     }
 
+    if (job.status !== 'Open') {
+        return next(new ErrorHandler('This job already in progess', 400));
+    }
+
     const request = job.requests.id(requestId);
 
     if (!request) {
         return next(new ErrorHandler('Can not find any freelancer offer that matches the one you provide', 400));
     }
 
-    const freelancer = await User.findById(request.freelancer).lean();
+    const freelancer = await User.findById(request.freelancer);
 
     request.selected = true;
     job.status = 'Processing';
+    job.assignment.freelancer = freelancer._id;
+    job.assignment.status = 'Processing';
+    const now = new Date(Date.now());
+    job.assignment.deadline = now.setDate(now.getDate() + job.duration);
 
     await job.save();
 
-    // TODO: create an assignment for Freelancer
+    freelancer.jobTakens.push(job._id);
+    await freelancer.save();
 
     const message = `Congratulations, your offer for '${job.title}' has been accepted by the customer`
 
