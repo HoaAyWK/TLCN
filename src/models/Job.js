@@ -1,5 +1,27 @@
 const mongoose = require('mongoose');
 
+
+const requestSchema = new mongoose.Schema({
+    freelancer: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    message: {
+        type: String,
+        required: true
+    },
+    offer: {
+        type: Number,
+        required: true
+    },
+    selected: {
+        type: Boolean,
+        required: true,
+        default: false
+    }
+});
+
 const jobSchema = new mongoose.Schema({
     title: {
         type: String,
@@ -26,17 +48,17 @@ const jobSchema = new mongoose.Schema({
     },
     duration: {
         type: Number,
-        required: [true, 'CloseTime is required']
+        required: [true, 'Duration is required']
     },
-    price: {
-        min: {
-            type: Number,
-            required: true
-        },
-        max: {
-            type: Number,
-            required: true
-        }
+    minPrice: {
+        type: Number,
+        required: [true, 'Min price is required'],
+        default: 0.0
+    },
+    maxPrice: {
+        type: Number,
+        required: [true, 'Max price is required'],
+        default: 0.0
     },
     category: {
         type: mongoose.Schema.Types.ObjectId,
@@ -63,21 +85,7 @@ const jobSchema = new mongoose.Schema({
         }
     },
     requests: [
-        {
-            freelancer: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'User',
-                required: true
-            },
-            message: {
-                type: String,
-                required: true
-            },
-            offer: {
-                type: Number,
-                required: true
-            }
-        }
+        requestSchema
     ]
 });
 

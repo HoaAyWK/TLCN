@@ -1,6 +1,7 @@
 const cloudinary = require('cloudinary');
 const mongoose = require('mongoose');
 
+const APIFeatures = require('../utils/apiFeatures');
 const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
 const ErrorHandler = require('../utils/errorHandler');
 const Job = require('../models/Job');
@@ -8,13 +9,27 @@ const User = require('../models/User');
 const sendEmail = require('../services/sendEmail');
 
 exports.getJobs = catchAsyncErrors(async (req, res, next) => {
-    const jobs = await Job.find({ status: 'Open' })
-        .select('-__v')
-        .lean();
+    const itemsPerPage = req.query.perPage || 5;
+    const total = await Job.count();
+    const apiFeaturesSF = new APIFeatures(Job, req.query)
+        .search()
+        .filter();
+
+    const apiFeaturesSFP = new APIFeatures(Job.find(), req.query)
+        .search()
+        .filter()
+        .pagination(itemsPerPage);
+
+    let jobs = await apiFeaturesSF.query.lean();
+    const filteredJobsCount = jobs.length;
+
+    jobs = await apiFeaturesSFP.query.lean();
 
     res.status(200).json({
         success: true,
-        count: jobs.length,
+        itemsPerPage,
+        jobsCount: total,
+        filteredJobsCount,
         jobs
     });
 });
@@ -70,10 +85,8 @@ exports.createJob = catchAsyncErrors(async (req, res, next) => {
         closeTime,
         duration,
         category,
-        price: {
-            min: minPrice,
-            max: maxPrice
-        },
+        minPrice,
+        maxPrice,
         owner: req.user._id
     };
 
@@ -213,7 +226,10 @@ exports.cancelOffer = catchAsyncErrors(async (req, res, next) => {
         return next(new ErrorHandler('User not found', 404));
     }
 
-    const jobId = new mongoose.Types.ObjectId(job._id);
+    if (job.status !== 'Open' && user.offers.includes(job._id)) {
+        return next(new ErrorHandler('Can not cancel this offer because it already in progess', 400));
+    }
+
     const userId = new mongoose.Types.ObjectId(req.user._id);
 
     job.requests = job.requests.filter(request => request.freelancer.toString() !== userId.toString());
@@ -225,5 +241,72 @@ exports.cancelOffer = catchAsyncErrors(async (req, res, next) => {
     res.status(200).json({
         success: true,
         message: 'Cancelled the offer'
+    });
+});
+
+exports.selectFreelancer = catchAsyncErrors(async (req, res, next) => {
+    const { requestId } = req.body;
+
+    // TODO: check if the current user is the owner's job
+
+    if (!requestId) {
+        return next(new ErrorHandler('Please select a job request!', 400));
+    }
+
+    const job = await Job.findById(req.params.id).select('-__v');
+
+    if (!job) {
+        return next(new ErrorHandler('Job not found', 404));
+    }
+
+    const request = job.requests.id(requestId);
+
+    if (!request) {
+        return next(new ErrorHandler('Can not find any freelancer offer that matches the one you provide', 400));
+    }
+
+    const freelancer = await User.findById(request.freelancer).lean();
+
+    request.selected = true;
+    job.status = 'Processing';
+
+    await job.save();
+
+    // TODO: create an assignment for Freelancer
+
+    const message = `Congratulations, your offer for '${job.title}' has been accepted by the customer`
+
+    try {
+        await sendEmail({
+            email: freelancer.email,
+            subject: 'Your offer has been accepted',
+            message
+        });
+
+        res.status(200).json({
+            success: true,
+            message: `Email sent to: ${freelancer.email}`
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+exports.getMyOfferJobs = catchAsyncErrors(async (req, res, next) => {
+    const user = await User.findById(req.user._id)
+        .populate('offers')
+        .select('-__v')
+        .lean();
+
+    if (!user) {
+        return next(new ErrorHandler('User not found', 404));
+    }
+
+    res.status(200).json({
+        success: true,
+        jobs: user.offers
     });
 });

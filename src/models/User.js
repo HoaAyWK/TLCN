@@ -91,7 +91,7 @@ const userSchema = new mongoose.Schema({
     },
     offers: {
         type: [mongoose.Schema.Types.ObjectId],
-        ref: 'User',
+        ref: 'Job',
         default: []
     }
 }, { timestamps: true });
