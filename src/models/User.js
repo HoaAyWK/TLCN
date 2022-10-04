@@ -93,6 +93,11 @@ const userSchema = new mongoose.Schema({
         type: [mongoose.Schema.Types.ObjectId],
         ref: 'Job',
         default: []
+    },
+    jobTakens: {
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: 'Job',
+        default: []
     }
 }, { timestamps: true });
 
