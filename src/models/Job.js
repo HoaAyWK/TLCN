@@ -57,10 +57,28 @@ const jobSchema = new mongoose.Schema({
                 'Open',
                 'Processing',
                 'Closed',
-                'Canceled'
+                'Canceled',
+                'Expired'
             ]
         }
-    }
+    },
+    requests: [
+        {
+            freelancer: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'User',
+                required: true
+            },
+            message: {
+                type: String,
+                required: true
+            },
+            offer: {
+                type: Number,
+                required: true
+            }
+        }
+    ]
 });
 
 module.exports = mongoose.model('Job', jobSchema);

@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
 const ErrorHandler = require('../utils/errorHandler');
 const Job = require('../models/Job');
+const User = require('../models/User');
 const sendEmail = require('../services/sendEmail');
 
 exports.getJobs = catchAsyncErrors(async (req, res, next) => {
@@ -169,4 +170,60 @@ exports.deleteEmloyerJob = catchAsyncErrors(async (req, res, next) => {
             message: error.message
         });
     }
+});
+
+exports.offerJob = catchAsyncErrors(async (req, res, next) => {
+    const { message, offer } = req.body;
+
+    if (!message || !offer) {
+        return next(new ErrorHandler('Message and offer are required', 400));
+    }
+
+    const job = await Job.findById(req.params.id).select('-__v');
+    const user = await User.findById(req.user._id);
+
+    if (!job) {
+        return next(new ErrorHandler('Job not found', 404));
+    }
+
+    if (!user) {
+        return next(new ErrorHandler('User not found', 404));
+    }
+
+    job.requests.push({ freelancer: user, message, offer });
+    user.offers.push(job._id);
+    await job.save();
+    await user.save();
+
+    res.status(200).json({
+        success: true,
+        message: `Your offer has been sent to the job`
+    });
+});
+
+exports.cancelOffer = catchAsyncErrors(async (req, res, next) => {
+    const job = await Job.findById(req.params.id);
+    const user = await User.findById(req.user._id);
+
+    if (!job) {
+        return next(new ErrorHandler('Job not found', 404));
+    }
+
+    if (!user) {
+        return next(new ErrorHandler('User not found', 404));
+    }
+
+    const jobId = new mongoose.Types.ObjectId(job._id);
+    const userId = new mongoose.Types.ObjectId(req.user._id);
+
+    job.requests = job.requests.filter(request => request.freelancer.toString() !== userId.toString());
+    user.offers = user.offers.filter(item => item.toString() !== job._id.toString());
+
+    await job.save();
+    await user.save();
+
+    res.status(200).json({
+        success: true,
+        message: 'Cancelled the offer'
+    });
 });
