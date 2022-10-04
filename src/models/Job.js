@@ -76,6 +76,11 @@ const jobSchema = new mongoose.Schema({
             offer: {
                 type: Number,
                 required: true
+            },
+            selected: {
+                type: Boolean,
+                required: true,
+                default: false
             }
         }
     ]

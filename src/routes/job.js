@@ -7,7 +7,8 @@ const {
     deleteEmloyerJob,
     createJob,
     offerJob,
-    cancelOffer
+    cancelOffer,
+    selectFreelancer
 } = require('../controllers/jobController');
 const { isAuthenticated, authorizeRoles } = require('../middlewares/auth');
 
@@ -16,6 +17,9 @@ const router = Router();
 router.route('/jobs').get(getJobs);
 router.route('/jobs/create')
     .post(isAuthenticated, authorizeRoles('employer'), createJob);
+
+router.route('/jobs/:id/freelancer')
+    .post(isAuthenticated, authorizeRoles('employer'), selectFreelancer);
 
 router.route('/jobs/offer/:id')
     .post(isAuthenticated, authorizeRoles('freelancer'), offerJob);

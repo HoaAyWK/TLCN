@@ -213,7 +213,6 @@ exports.cancelOffer = catchAsyncErrors(async (req, res, next) => {
         return next(new ErrorHandler('User not found', 404));
     }
 
-    const jobId = new mongoose.Types.ObjectId(job._id);
     const userId = new mongoose.Types.ObjectId(req.user._id);
 
     job.requests = job.requests.filter(request => request.freelancer.toString() !== userId.toString());
@@ -226,4 +225,55 @@ exports.cancelOffer = catchAsyncErrors(async (req, res, next) => {
         success: true,
         message: 'Cancelled the offer'
     });
+});
+
+exports.selectFreelancer = catchAsyncErrors(async (req, res, next) => {
+    const { requestId } = req.body;
+
+    // TODO: check if the current user is the owner's job
+
+    if (!requestId) {
+        return next(new ErrorHandler('Please select a job request!', 400));
+    }
+
+    const job = await Job.findById(req.params.id).select('-__v');
+
+    if (!job) {
+        return next(new ErrorHandler('Job not found', 404));
+    }
+
+    const request = job.requests.id(requestId);
+
+    if (!request) {
+        return next(new ErrorHandler('Can not find any freelancer offer that matches the one you provide', 400));
+    }
+
+    const freelancer = await User.findById(request.freelancer).lean();
+
+    request.selected = true;
+    job.status = 'Processing';
+
+    await job.save();
+
+    // TODO: create an assignment for Freelancer
+
+    const message = `Congratulations, your offer for '${job.title}' has been accepted by the customer`
+
+    try {
+        await sendEmail({
+            email: freelancer.email,
+            subject: 'Your offer has been accepted',
+            message
+        });
+
+        res.status(200).json({
+            success: true,
+            message: `Email sent to: ${freelancer.email}`
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
 });
