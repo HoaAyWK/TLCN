@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
     },
     emailConfirmed: {
         type: Boolean,
-        default: this.provider !== 'email' ? true : false
+        default: false
     },
     firstName: {
         type: String,
@@ -88,7 +88,12 @@ const userSchema = new mongoose.Schema({
     resetPasswordExpire: {
         type: Date,
         select: false
-    } 
+    },
+    offers: {
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: 'User',
+        default: []
+    }
 }, { timestamps: true });
 
 userSchema.pre('save', async function(next) {
