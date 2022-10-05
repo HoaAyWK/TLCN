@@ -6,7 +6,7 @@ const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
 const ErrorHandler = require('../utils/errorHandler');
 const Job = require('../models/Job');
 const User = require('../models/User');
-const sendEmail = require('../services/sendEmail');
+const sendEmail = require('../services/sendEmailService');
 
 exports.getJobs = catchAsyncErrors(async (req, res, next) => {
     const itemsPerPage = req.query.perPage || 5;
