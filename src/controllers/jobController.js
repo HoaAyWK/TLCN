@@ -203,6 +203,12 @@ exports.offerJob = catchAsyncErrors(async (req, res, next) => {
         return next(new ErrorHandler('User not found', 404));
     }
 
+    const pointsRequire = offer * 0.3;
+
+    if (user.points < pointsRequire) {
+        return next(new ErrorHandler(`To offer this job, you must have at least ${pointsRequire} points (30% offer you provide) in your account`, 400));
+    }
+
     job.requests.push({ freelancer: user, message, offer });
     user.offers.push(job._id);
     await job.save();
@@ -270,6 +276,7 @@ exports.selectFreelancer = catchAsyncErrors(async (req, res, next) => {
     }
 
     const freelancer = await User.findById(request.freelancer);
+    
 
     request.selected = true;
     job.status = 'Processing';

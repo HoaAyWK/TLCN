@@ -98,6 +98,11 @@ const userSchema = new mongoose.Schema({
         type: [mongoose.Schema.Types.ObjectId],
         ref: 'Job',
         default: []
+    },
+    points: {
+        type: Number,
+        default: 0.0,
+        required: true
     }
 }, { timestamps: true });
 

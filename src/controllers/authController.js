@@ -60,7 +60,7 @@ exports.confirmEmail = catchAsyncErrors(async (req, res, next) => {
     const user = await User.findOne({
         confirmationEmailToken,
         confirmationEmailTokenExpire: { $gt: Date.now() }
-    }).select('+confirmationEmailToken +confirmationEmailTokenExpire');
+    }).select('+confirmationEmailToken +confirmationEmailTokenExpire -points -jobTakens -offers');
 
     if (!user) {
         return next(new ErrorHandler('Confirmation email token invalid or has been expired', 400));
@@ -82,7 +82,7 @@ exports.login = catchAsyncErrors(async (req, res, next) => {
         return next(new ErrorHandler('Email and Password are required'));
     }
 
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email }).select('+password -points -jobTakens -offers');
 
     if (!user) {
         return next(new ErrorHandler('User not found', 404));
@@ -150,7 +150,7 @@ exports.resetPassword = catchAsyncErrors(async (req, res, next) => {
     const user = await User.findOne({
         resetPasswordToken,
         resetPasswordExpire: { $gt: Date.now() }
-    }).select('+resetPasswordToken +resetPasswordExpire');
+    }).select('+resetPasswordToken +resetPasswordExpire -points -jobTakens -offers');
 
     if (!user) {
         return next(new ErrorHandler('Password reset token invalid or has been expired.', 400));
