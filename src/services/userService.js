@@ -63,9 +63,6 @@ const changeUserStatus = async (id, status) => {
 };
 
 const changePassword = async (id, oldPassword, newPassword) => {
-    if (!oldPassword || !newPassword) {
-        return next(new ApiError(400, 'Old Password and New Password are required'));
-    }
 
     const user = await User.findById(id).select('+password');
 
