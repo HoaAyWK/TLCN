@@ -1,5 +1,3 @@
-const cloudinary = require('cloudinary');
-
 const { categoryService } = require('../services');
 const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
 
@@ -18,7 +16,7 @@ const getCategoryDetail = catchAsyncErrors(async (req, res, next) => {
         .getCategoryWithChildrenById(req.params.id);
     
     if (!category) {
-        throw new Error();
+        throw new ApiError(404, 'Category not found');
     }
 
     res.status(200).json({

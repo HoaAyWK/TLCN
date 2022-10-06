@@ -1,9 +1,8 @@
-const Point = require('../models/Point');
 const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
-const ErrorHandler = require('../utils/errorHandler');
+const { pointService } = require('../services');
 
-exports.getPoints = catchAsyncErrors(async (req, res, next) => {
-    const points = await Point.find({}, '-__v').lean();
+const getPoints = catchAsyncErrors(async (req, res, next) => {
+    const points = await pointService.getAllPoints();
 
     res.status(200).json({
         success: true,
@@ -12,11 +11,11 @@ exports.getPoints = catchAsyncErrors(async (req, res, next) => {
     });
 });
 
-exports.getPoint = catchAsyncErrors(async (req, res, next) => {
-    const point = await Point.findById(req.params.id, '-__v').lean();
+const getPoint = catchAsyncErrors(async (req, res, next) => {
+    const point = await pointService.getPoint(req.params.id);
 
     if (!point) {
-        return next(new ErrorHandler('Point not found', 404));
+        throw new ApiError(404, 'Point not found');
     }
 
     res.status(200).json({
@@ -25,31 +24,27 @@ exports.getPoint = catchAsyncErrors(async (req, res, next) => {
     });
 });
 
-exports.createPoint = catchAsyncErrors(async (req, res, next) => {
-    const newPoint = new Point(req.body);
-    const point = await newPoint.save();
-    const { __v, ...ortherDetails } = point._doc;
+const createPoint = catchAsyncErrors(async (req, res, next) => {
+    const point = await pointService.create(req.body);
 
     res.status(201).json({
         success: true,
-        point: ortherDetails
+        point
     });
 });
 
-exports.deletePoint = catchAsyncErrors(async (req, res, next) => {
-    const point = await Point.findById(req.params.id);
-
-    if (!point) {
-        return next(new ErrorHandler('Point not found', 404));
-    }
-
-    // TODO: check if there is any payment reference to
-
-
-    await point.remove();
+const deletePoint = catchAsyncErrors(async (req, res, next) => {
+    await pointService.deletePoint(req.params.id);
     
     res.status(200).json({
         success: true,
         message: `Deleted point with id: ${req.params.id}`
     });
 });
+
+module.exports = {
+    getPoints,
+    getPoint,
+    createPoint,
+    deletePoint
+};
