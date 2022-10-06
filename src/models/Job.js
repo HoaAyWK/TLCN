@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+const { toJSON, paginate } = require('./plugins');
 
 const requestSchema = new mongoose.Schema({
     freelancer: {
@@ -23,9 +24,9 @@ const requestSchema = new mongoose.Schema({
 });
 
 const jobSchema = new mongoose.Schema({
-    title: {
+    name: {
         type: String,
-        require: [true, 'Title is required']
+        require: [true, 'Name is required']
     },
     description: {
         type: String,
@@ -101,4 +102,12 @@ const jobSchema = new mongoose.Schema({
     }
 });
 
-module.exports = mongoose.model('Job', jobSchema);
+jobSchema.plugin(toJSON);
+jobSchema.plugin(paginate);
+
+/**
+ * @typedef Job
+ */
+const Job = mongoose.model('Job', jobSchema);
+
+module.exports = Job;
