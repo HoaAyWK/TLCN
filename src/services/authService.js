@@ -12,10 +12,6 @@ const { Token } = require('../models');
  */
 
 const login = async (email, password) => {
-    if (!email || !password) {
-        throw new ApiError(400, 'Email and Password are required');
-    }
-
     const user = await userService.getUserWithPasswordByEmail(email);
 
     if (!user || !(await user.isPasswordMatch(password))) {
@@ -36,9 +32,6 @@ const login = async (email, password) => {
  * @returns {Promise<User>}
  */
 const resetPassword = async (resetPasswordToken, password, confirmPassword) => {
-    if (!password || !confirmPassword) {
-        throw new ApiError(400, 'Password and ConfirmPassword are required');
-    }
 
     if (password !== confirmPassword) {
         throw new ApiError(400, 'Password and ConfirmPassword are not matching');
