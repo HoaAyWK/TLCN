@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { toJSON } = require('./plugins');
 
 const categorySchema = new mongoose.Schema({
     name: {
@@ -32,4 +33,11 @@ const categorySchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Category', categorySchema);
+categorySchema.plugin(toJSON);
+
+/**
+ * @typedef Category
+ */
+const Category = mongoose.model('Category', categorySchema);
+
+module.exports = Category;
