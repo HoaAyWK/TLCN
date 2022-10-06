@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+const { toJSON } = require('./plugins');
+
 const pointSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -16,4 +18,11 @@ const pointSchema = new mongoose.Schema({
     }
 });
 
-module.exports = mongoose.model('Point', pointSchema);
+pointSchema.plugin(toJSON);
+
+/**
+ * @typedef Point
+ */
+const Point = mongoose.model('Point', pointSchema);
+
+module.exports = Point;
