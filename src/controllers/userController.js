@@ -1,30 +1,27 @@
-const cloudinary = require('cloudinary');
-
+const ApiError = require('../utils/ApiError');
 const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
-const ErrorHandler = require('../utils/errorHandler');
-const User = require('../models/User');
+const pick = require('../utils/pick');
 const sendToken = require('../utils/sendToken');
+const { userService, tokenService } = require('../services');
+const { userStatus } = require('../config/userStatus');
 
 
-exports.getAllUsers = catchAsyncErrors(async (req, res, next) => {
-    const users = await User.find()
-        .select('-__v')
-        .lean();
+const getAllUsers = catchAsyncErrors(async (req, res, next) => {
+    const filter = pick(req.query, ['name', 'status']);
+    const options = pick(req.query, ['sortBy', 'limit', 'page']);
+    const result = await userService.queryUsers(filter, options);
 
     res.status(200).json({
         success: true,
-        count: users.length,
-        users
+        ...result
     });
 });
 
-exports.getUserDetails = catchAsyncErrors(async (req, res, next) => {
-    const user = await User.findById(req.params.id)
-        .select('-__v')
-        .lean();
+const getUser = catchAsyncErrors(async (req, res, next) => {
+    const user = await userService.getUserById(req.params.id);
 
     if (!user) {
-        return next(new ErrorHandler('User not found', 404));
+        return next(new ApiError(404, 'User not found'));
     }
 
     res.status(200).json({
@@ -33,15 +30,9 @@ exports.getUserDetails = catchAsyncErrors(async (req, res, next) => {
     });
 });
 
-exports.banUser = catchAsyncErrors(async (req, res, next) => {
-    const user = await User.findById(req.params.id).select('-__v');
-
-    if (!user) {
-        return next(new ErrorHandler('User not found', 404));
-    }
-
-    user.status = 'Banned';
-    await user.save({ validateBeforeSave: false })
+const banUser = catchAsyncErrors(async (req, res, next) => {
+    const user = await userService
+        .changeUserStatus(req.params.id, userStatus.BANNED);
     
     res.status(200).json({
         success: true,
@@ -49,29 +40,21 @@ exports.banUser = catchAsyncErrors(async (req, res, next) => {
     });
 });
 
-exports.deleteUser = catchAsyncErrors(async (req, res, next) => {
-    const user = await User.findById(req.params.id).select('-__v');
+const deleteUser = catchAsyncErrors(async (req, res, next) => {
+    const user = await userService
+        .changeUserStatus(req.params.id, userStatus.DELETED);
+    
+    res.status(200).json({
+        success: true,
+        user
+    });
+});
+
+const getUserProfile = catchAsyncErrors(async (req, res, next) => {
+    const user = await userService.getUserDetails(req.user.id);
 
     if (!user) {
-        return next(new ErrorHandler('User not found', 404));
-    }
-
-    user.status = 'Deleted';
-    await user.save({ validateBeforeSave: false });
-    
-    res.status(200).json({
-        success: true,
-        user
-    });
-});
-
-exports.getUserProfile = catchAsyncErrors(async (req, res, next) => {
-    const user = await User.findById(req.user._id)
-        .select('-__v')
-        .lean();
-    
-    if (!user) {
-        return next(new ErrorHandler('User not found', 404));
+        return next(new ApiError(404, 'User not found'));
     }
 
     res.status(200).json({
@@ -80,41 +63,8 @@ exports.getUserProfile = catchAsyncErrors(async (req, res, next) => {
     });
 });
 
-exports.updateUserProfile = catchAsyncErrors(async (req, res, next) => {
-    const userId = req.user._id;
-    const newUserData = {
-        email: req.body.email,
-        name: req.body.name,
-        firstName: req.body.firstName,
-        lastName: req.body.lastName
-    };
-
-    if (req.body.avatar) {
-        const user = await User.findById(userId);
-        const image_id = user.avatar.public_id;
-        const res = await cloudinary.v2.uploader.destroy(image_id);
-        const result = await cloudinary.v2.uploader.upload(req.body.avatar, {
-            folder: 'avatar',
-            width: 150,
-            crop: "scale"
-        });
-
-        newUserData.avatar = {
-            public_id: result.public_id,
-            url: result.secure_url
-        };
-    }
-    
-    const user = await User.findByIdAndUpdate(
-            userId,
-            { $set: newUserData },
-            { 
-                new: true,
-                runValidators: true
-            }
-        )
-        .select('-__v')
-        .lean();
+const updateUserProfile = catchAsyncErrors(async (req, res, next) => {
+    const user = await userService.updateUserById(req.user.id, req.body);
 
     res.status(200).json({
         success: true,
@@ -122,42 +72,38 @@ exports.updateUserProfile = catchAsyncErrors(async (req, res, next) => {
     });
 });
 
-exports.changePassword = catchAsyncErrors(async (req, res, next) => {
+const changePassword = catchAsyncErrors(async (req, res, next) => {
     const { oldPassword, newPassword } = req.body;
 
-    if (!oldPassword || !newPassword) {
-        return next(new ErrorHandler('Old Password and New Password are required', 400));
-    }
+    const user = await userService.changePassword(req.user.id, oldPassword, newPassword);
+    const accessToken = tokenService.generateAuthToken(user);
 
-    const user = await User.findById(req.user._id).select('+password');
-
-    if (!user) {
-        return next(new ErrorHandler('User not found', 404));
-    }
-
-    const isPasswordMatching = await user.comparePassword(oldPassword);
-
-    if (!isPasswordMatching) {
-        return next(new ErrorHandler('Wrong password!', 400));
-    }
-
-    user.password = newPassword;
-    await user.save();
-    sendToken(user, 200, res);
+    sendToken(user, accessToken, 200, res);
 });
 
-exports.deleteMyAccount = catchAsyncErrors(async (req, res, next) => {
-    const user = await User.findById(req.user._id);
-
-    if (!user) {
-        return next(new ErrorHandler('User not found', 404));
+const deleteMyAccount = catchAsyncErrors(async (req, res, next) => {
+    const user =  await userService.changeUserStatus(req.user.id, userStatus.DELETED);
+    
+    if (user) {
+        return res.status(200).json({
+            success: true,
+            user: 'Deleted account'
+        });
     }
 
-    user.status = 'Deleted';
-    await user.save({ validateBeforeSave: false })
-    
-    res.status(200).json({
-        success: true,
-        user: 'Deleted account'
+    res.status(500).json({
+        success: false,
+        message: 'Threre is an error when deleting user'
     });
 });
+
+module.exports = {
+    getAllUsers,
+    getUser,
+    getUserProfile,
+    changePassword,
+    updateUserProfile,
+    banUser,
+    deleteUser,
+    deleteMyAccount,
+};

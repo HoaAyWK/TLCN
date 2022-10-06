@@ -1,19 +1,20 @@
 const jwt = require('jsonwebtoken');
 
+const ApiError = require('../utils/ApiError');
 const catchAsyncErrors = require('./catchAsyncErrors');
-const ErrorHandler = require('../utils/errorHandler');
-const User = require('../models/User');
+const config = require('../config/config');
+const { userService } = require('../services');
 
 exports.isAuthenticated = catchAsyncErrors(async (req, res, next) => {
     const { token } = req.cookies;
 
     if (!token) {
-        return next(createError(401, 'You are not logged in.'));
+        return next(new ApiError(401, 'You are not logged in'));
     }
 
-    const { id } = jwt.verify(token, process.env.JWT_SECRET);
+    const { sub } = jwt.verify(token.token, config.jwt.secret);
+    const user = await userService.getUserById(sub);
 
-    const user = await User.findById(id).lean();
     req.user = user;
     next();
 });
@@ -22,7 +23,7 @@ exports.authorizeRoles = (...roles) => {
     if (roles.length === 1) {
         return (req, res, next) => {
             if (!req.user.roles.includes(roles[0])) {
-                return next(new ErrorHandler('You do not have permission to access this resource.', 403));
+                return next(new ApiError(403, 'You do not have permission to access this resource'));
             }
 
             return next();
@@ -35,7 +36,7 @@ exports.authorizeRoles = (...roles) => {
                 }
             }
     
-            return next(new ErrorHandler('You do not have permission to access this resource.', 403));
+            return next(new ApiError(403, 'You do not have permission to access this resource.'));
         }
     }
 }
