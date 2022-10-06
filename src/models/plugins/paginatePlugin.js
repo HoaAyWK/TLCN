@@ -9,6 +9,7 @@ const paginate = (schema) => {
      */
     /**
      * Query for documents with pagination
+     * @param {string} [search] - Search keyword by name
      * @param {Object} [filter] - Mongo filter
      * @param {Object} [options] - Query options
      * @param {string} [options.sortBy] - Sorting criteria using the format: sortField:(desc|asc). Multiple sorting criteria should be separated by commas (,)

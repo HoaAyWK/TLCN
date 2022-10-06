@@ -1,6 +1,4 @@
-const crypto = require('crypto');
 const { compare, hash } = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const validator = require('validator');
 
@@ -17,15 +15,11 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    firstName: {
+    name: {
         type: String,
-        required: false,
-        maxLength: [100, 'First name must not be logger than 100 characters']
-    },
-    lastName: {
-        type: String,
-        required: false,
-        maxLength: [100, 'Last name must not be logger than 100 characters']
+        required: [true, 'Name is required'],
+        maxLength: [100, 'Name must between 2 to 100 characters'],
+        minLength: [2, 'Name must between 2 to 100 characters']
     },
     password: {
         type: String,
@@ -75,22 +69,6 @@ const userSchema = new mongoose.Schema({
     country: String,
     introduction: String,
     experience: String,
-    confirmationEmailToken: {
-        type: String,
-        select: false
-    },
-    confirmationEmailTokenExpire: {
-        type: Date,
-        select: false
-    },
-    resetPasswordToken: {
-        type: String,
-        select: false
-    },
-    resetPasswordExpire: {
-        type: Date,
-        select: false
-    },
     offers: {
         type: [mongoose.Schema.Types.ObjectId],
         ref: 'Job',
@@ -139,43 +117,6 @@ userSchema.methods.isPasswordMatch = async function (password) {
     const user = this;
     return compare(password, user.password);
 };
-
-// userSchema.methods.getJwtToken = function() {
-//     return jwt.sign(
-//         { 
-//             id: this._id
-//         },
-//         process.env.JWT_SECRET,
-//         {
-//             expiresIn: process.env.JWT_EXPIRES_TIME
-//         }
-//     );
-// };
-
-// userSchema.methods.getConfirmationEmailToken = function() {
-//     const token = crypto.randomBytes(20).toString('hex');
-//     this.confirmationEmailToken = crypto
-//         .createHash('sha256')
-//         .update(token)
-//         .digest('hex');
-
-//     this.confirmationEmailTokenExpire = Date.now() + 30 * 60 * 1000;
-
-//     return token;
-// };
-
-// userSchema.methods.getResetPasswordToken = function() {
-//     const resetToken = crypto.randomBytes(20).toString('hex');
-//     this.resetPasswordToken = crypto
-//         .createHash('sha256')
-//         .update(resetToken)
-//         .digest('hex');
-
-//     this.resetPasswordExpire = Date.now() + 30 * 60 * 1000;
-
-//     return resetToken;
-// };
-
 
 /**
  * @typedef User

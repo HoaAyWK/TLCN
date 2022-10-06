@@ -1,3 +1,5 @@
+const cloudinary = require('cloudinary');
+
 const ApiError = require('../utils/ApiError');
 const User = require('../models/User');
 
@@ -28,6 +30,14 @@ const queryUsers = async (filter, options) => {
 };
 
 const getUserById = async (id) => {
+    return User.findById(id).select('-points -jobTakens -offers');
+};
+
+const getUserWithPasswordById = async (id) => {
+    return User.findById(id).select('+password');
+};
+
+const getUserDetails = async (id) => {
     return User.findById(id);
 };
 
@@ -39,7 +49,43 @@ const getUserWithPasswordByEmail = async (email) => {
     return User.findOne({ email }).select('+password');
 };
 
-const updateUser = async (id, updateBody) => {
+const changeUserStatus = async (id, status) => {
+    const user = await User.findById(id).select('-points -jobTakens -offers');
+
+    if (!user) {
+        throw new ApiError(404, 'User not found');
+    }
+
+    user.status = status;
+    await user.save({ validateBeforeSave: false });
+    
+    return user;
+};
+
+const changePassword = async (id, oldPassword, newPassword) => {
+    if (!oldPassword || !newPassword) {
+        return next(new ApiError(400, 'Old Password and New Password are required'));
+    }
+
+    const user = await User.findById(id).select('+password');
+
+    if (!user) {
+        throw new ApiError(404, 'User not found');
+    }
+
+    const isPasswordMatching = await user.isPasswordMatch(oldPassword);
+
+    if (!isPasswordMatching) {
+        throw new ApiError(400, 'Wrong password!');
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    return user;
+};
+
+const updateUserById = async (id, updateBody) => {
     const user = await User.findById(id);
 
     if (!user) {
@@ -50,10 +96,41 @@ const updateUser = async (id, updateBody) => {
         throw new ApiError(400, 'Email already taken');
     }
 
-    Object.assign(user, updateBody);
-    await user.save();
-    
-    return user;
+    const newUserData = {
+        email: updateBody.email,
+        name: updateBody.name,
+        phone: updateBody.phone
+    };
+
+    if (updateBody.avatar) {
+        if (user.avatar.public_id) {
+            const image_id = user.avatar.public_id;
+            await cloudinary.v2.uploader.destroy(image_id);
+        }
+        
+        const result = await cloudinary.v2.uploader.upload(req.body.avatar, {
+            folder: 'avatar',
+            width: 150,
+            crop: "scale"
+        });
+
+        newUserData.avatar = {
+            public_id: result.public_id,
+            url: result.secure_url
+        };
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+        id,
+        { $set: newUserData },
+        { 
+            new: true,
+            runValidators: true
+        }
+    )
+    .lean();
+
+    return updatedUser;
 };
 
 const deleteUser = async (id) => {
@@ -73,6 +150,10 @@ module.exports = {
     getUserByEmail,
     getUserWithPasswordByEmail,
     getUserById,
-    updateUser,
+    getUserWithPasswordById,
+    getUserDetails,
+    changeUserStatus,
+    changePassword,
+    updateUserById,
     deleteUser
 };
