@@ -1,49 +1,67 @@
 const { Router } = require('express');
 
-const { 
-    getJobs,
-    getJobDetails,
-    deleteMyJob,
-    deleteEmloyerJob,
-    createJob,
-    offerJob,
-    cancelOffer,
-    selectFreelancer,
-    getMyOfferJobs
-} = require('../controllers/jobController');
+const jobController = require('../controllers/jobController');
 const { isAuthenticated, authorizeRoles } = require('../middlewares/auth');
 
 const router = Router();
 
-router.route('/jobs').get(getJobs);
+router.route('/jobs').get(jobController.getJobs);
 
 // Employer creates an job
 router.route('/jobs/create')
-    .post(isAuthenticated, authorizeRoles('employer'), createJob);
+    .post(
+        isAuthenticated,
+        authorizeRoles('employer'),
+        jobController.createJob
+    );
 
 // Employer selects a freelancer to do the job
 router.route('/jobs/:id/freelancer')
-    .post(isAuthenticated, authorizeRoles('employer'), selectFreelancer);
+    .post(
+        isAuthenticated,
+        authorizeRoles('employer'),
+        jobController.selectFreelancer
+    );
 
 // Freelancer offers the job
 router.route('/jobs/offer/:id')
-    .post(isAuthenticated, authorizeRoles('freelancer'), offerJob);
+    .post(
+        isAuthenticated,
+        authorizeRoles('freelancer'),
+        jobController.offerJob
+    );
 
 // Freelancer cancels the offer
 router.route('/jobs/offer/cancel/:id')
-    .delete(isAuthenticated, authorizeRoles('freelancer'), cancelOffer);
+    .delete(
+        isAuthenticated,
+        authorizeRoles('freelancer'),
+        jobController.cancelOffer
+    );
 
 // Freelancer views the jobs list which he/she has sent an offer
 router.route('/jobs/offers')
-    .get(isAuthenticated, authorizeRoles('freelancer'), getMyOfferJobs);
+    .get(
+        isAuthenticated,
+        authorizeRoles('freelancer'),
+        jobController.getMyOfferJobs
+    );
 
-// Employer views the job details
+// Employer views and deletes the job details
 router.route('/jobs/:id')
-    .get(getJobDetails)
-    .delete(isAuthenticated, authorizeRoles('employer'), deleteMyJob);
+    .get(jobController.getJobDetails)
+    .delete(
+        isAuthenticated,
+        authorizeRoles('employer'),
+        jobController.deleteJob
+    );
 
 // Admin views the job details
 router.route('/admin/jobs/:id')
-    .delete(isAuthenticated, authorizeRoles('admin'), deleteEmloyerJob);
+    .delete(
+        isAuthenticated,
+        authorizeRoles('admin'),
+        jobController.getJob
+    );
 
 module.exports = router;
