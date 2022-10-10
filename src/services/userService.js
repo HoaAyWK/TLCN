@@ -33,6 +33,10 @@ const getUserById = async (id) => {
     return User.findById(id).select('-points -jobTakens -offers');
 };
 
+const getUserWithAllInfo = async (id) => {
+    return User.findById(id);
+};
+
 const getUserWithPasswordById = async (id) => {
     return User.findById(id).select('+password');
 };
@@ -146,6 +150,7 @@ module.exports = {
     queryUsers,
     getUserByEmail,
     getUserWithPasswordByEmail,
+    getUserWithAllInfo,
     getUserById,
     getUserWithPasswordById,
     getUserDetails,
