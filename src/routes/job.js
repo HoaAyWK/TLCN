@@ -1,7 +1,9 @@
 const { Router } = require('express');
 
 const jobController = require('../controllers/jobController');
+const { jobValidation } = require('../validations');
 const { isAuthenticated, authorizeRoles } = require('../middlewares/auth');
+const validate = require('../middlewares/validate');
 
 const router = Router();
 
@@ -12,6 +14,7 @@ router.route('/jobs/create')
     .post(
         isAuthenticated,
         authorizeRoles('employer'),
+        validate(jobValidation.createJob),
         jobController.createJob
     );
 
