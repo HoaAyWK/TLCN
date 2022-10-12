@@ -1,11 +1,9 @@
 const cloudinary = require('cloudinary');
-const mongoose = require('mongoose');
 
 const ApiError = require('../utils/ApiError');
-const { Job, User, Offer } = require('../models');
+const { Job, User } = require('../models');
 const jobStatus = require('../config/jobStatus');
 const userService = require('./userService');
-const sendEmailService = require('./sendEmailService');
 const { startSession } = require('mongoose');
 const { roleValues } = require('../config/roles');
 

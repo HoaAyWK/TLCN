@@ -23,6 +23,11 @@ const envVarsSchema = Joi.object()
     SMTP_USERNAME: Joi.string().description('username for email server'),
     SMTP_PASSWORD: Joi.string().description('password for email server'),
     EMAIL_FROM: Joi.string().description('the from field in the emails sent by the app'),
+    STRIPE_PK: Joi.string().description('Stripe publish key'),
+    STRIPE_SK: Joi.string().description('Stripe secret key'),
+    PAYMENT_SUCCESS_URL: Joi.string().description('Payment success url'),
+    PAYMENT_CANCEL_URL: Joi.string().description('Payment cancel url'),
+    STRIPE_WEBHOOK_SECRET: Joi.string().description('Stripe webhook secret')
   })
   .unknown();
 
@@ -61,4 +66,13 @@ module.exports = {
     },
     from: envVars.EMAIL_FROM,
   },
+  stripe: {
+    pk: envVars.STRIPE_PK,
+    sk: envVars.STRIPE_SK,
+    webhook_secret: envVars.STRIPE_WEBHOOK_SECRET
+  },
+  payment: {
+    success_url: envVars.PAYMENT_SUCCESS_URL,
+    cancel_url: envVars.PAYMENT_CANCEL_URL
+  }
 };
