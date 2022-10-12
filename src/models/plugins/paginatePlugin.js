@@ -58,6 +58,12 @@ const paginate = (schema) => {
             });
         }
 
+        if (options.exclude) {
+            options.exclude.split(",").forEach((excludeOption) => {
+                docsPromise = docsPromise.select(`-${excludeOption}`)
+            });
+        }
+
         docsPromise = docsPromise.exec();
 
         return Promise.all([countPromise, docsPromise]).then((values) => {

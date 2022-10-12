@@ -2,35 +2,14 @@ const mongoose = require('mongoose');
 
 const { toJSON, paginate } = require('./plugins');
 
-const requestSchema = new mongoose.Schema({
-    freelancer: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    message: {
-        type: String,
-        required: true
-    },
-    offer: {
-        type: Number,
-        required: true
-    },
-    selected: {
-        type: Boolean,
-        required: true,
-        default: false
-    }
-});
-
 const jobSchema = new mongoose.Schema({
     name: {
         type: String,
-        require: [true, 'Name is required']
+        required: [true, 'Name is required']
     },
     description: {
         type: String,
-        require: [true, 'Description is required']
+        required: [true, 'Description is required']
     },
     file: {
         public_id: {
@@ -85,9 +64,11 @@ const jobSchema = new mongoose.Schema({
             ]
         }
     },
-    requests: [
-        requestSchema
-    ],
+    offers: {
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: 'Offer',
+        default: []
+    },
     assignment: {
         freelancer: {
             type: mongoose.Schema.Types.ObjectId,
@@ -98,7 +79,11 @@ const jobSchema = new mongoose.Schema({
         },
         deadline: {
             type: Date
-        }
+        },
+        fund: {
+            type: Number,
+            default: 0.0
+        },
     }
 });
 
