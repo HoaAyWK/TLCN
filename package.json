@@ -6,7 +6,8 @@
   "scripts": {
     "start": "nodemon src/server.js",
     "dev": "SET NODE_ENV=DEVELOPMENT& nodemon src/server",
-    "prod": "SET NODE_ENV=PRODUCTION& nodemon src/server"
+    "prod": "SET NODE_ENV=PRODUCTION& nodemon src/server",
+    "seeder": "node src/utils/seeder.js"
   },
   "author": "",
   "license": "ISC",
