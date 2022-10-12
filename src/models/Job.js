@@ -2,6 +2,28 @@ const mongoose = require('mongoose');
 
 const { toJSON, paginate } = require('./plugins');
 
+const offerSchema = new mongoose.Schema({
+    freelancer: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    amount: {
+        type: Number,
+        required: [true, 'Amount is required'],
+    },
+    message: {
+        type: String,
+        required: [true, 'Message is required']
+    },
+    isAccepted: {
+        type: Boolean,
+        default: false
+    }
+});
+
+offerSchema.plugin(toJSON);
+
 const jobSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -64,11 +86,9 @@ const jobSchema = new mongoose.Schema({
             ]
         }
     },
-    offers: {
-        type: [mongoose.Schema.Types.ObjectId],
-        ref: 'Offer',
-        default: []
-    },
+    offers: [
+        offerSchema
+    ],
     assignment: {
         freelancer: {
             type: mongoose.Schema.Types.ObjectId,
