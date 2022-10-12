@@ -3,6 +3,7 @@ const { Router } = require('express');
 const jobController = require('../controllers/jobController');
 const { jobValidation } = require('../validations');
 const { isAuthenticated, authorizeRoles } = require('../middlewares/auth');
+const { roleValues } = require('../config/roles');
 const validate = require('../middlewares/validate');
 
 const router = Router();
@@ -13,7 +14,7 @@ router.route('/jobs').get(jobController.getJobs);
 router.route('/jobs/create')
     .post(
         isAuthenticated,
-        authorizeRoles('employer'),
+        authorizeRoles(roleValues.EMPLOYER),
         validate(jobValidation.createJob),
         jobController.createJob
     );
@@ -22,7 +23,7 @@ router.route('/jobs/create')
 router.route('/jobs/:id/freelancer')
     .post(
         isAuthenticated,
-        authorizeRoles('employer'),
+        authorizeRoles(roleValues.EMPLOYER),
         jobController.selectFreelancer
     );
 
@@ -30,7 +31,7 @@ router.route('/jobs/:id/freelancer')
 router.route('/jobs/offer/:id')
     .post(
         isAuthenticated,
-        authorizeRoles('freelancer'),
+        authorizeRoles(roleValues.FREELANCER),
         jobController.offerJob
     );
 
@@ -38,7 +39,7 @@ router.route('/jobs/offer/:id')
 router.route('/jobs/offer/cancel/:id')
     .delete(
         isAuthenticated,
-        authorizeRoles('freelancer'),
+        authorizeRoles(roleValues.FREELANCER),
         jobController.cancelOffer
     );
 
@@ -46,7 +47,7 @@ router.route('/jobs/offer/cancel/:id')
 router.route('/jobs/offers')
     .get(
         isAuthenticated,
-        authorizeRoles('freelancer'),
+        authorizeRoles(roleValues.FREELANCER),
         jobController.getMyOfferJobs
     );
 
@@ -55,15 +56,39 @@ router.route('/jobs/:id')
     .get(jobController.getJobDetails)
     .delete(
         isAuthenticated,
-        authorizeRoles('employer'),
+        authorizeRoles(roleValues.EMPLOYER),
         jobController.deleteJob
+    );
+
+// Employer views the job with all offers had sent to this job
+router.route('/jobs/:id/offers')
+    .get(
+        isAuthenticated,
+        authorizeRoles(roleValues.EMPLOYER),
+        jobController.getJobWithOffers
+    );
+
+// Freelancer submits an assignment
+router.route('/jobs/:id/submit')
+    .put(
+        isAuthenticated,
+        authorizeRoles(roleValues.FREELANCER),
+        jobController.submitAssigment
+    );
+
+// Employer accepts the assignment
+router.route('/jobs/:id/finish')
+    .put(
+        isAuthenticated,
+        authorizeRoles(roleValues.EMPLOYER),
+        jobController.finishAssignment
     );
 
 // Admin views the job details
 router.route('/admin/jobs/:id')
     .delete(
         isAuthenticated,
-        authorizeRoles('admin'),
+        authorizeRoles(roleValues.ADMIN),
         jobController.getJob
     );
 

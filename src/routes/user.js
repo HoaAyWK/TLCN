@@ -3,6 +3,7 @@ const { Router } = require('express');
 const userController = require('../controllers/userController');
 const { isAuthenticated, authorizeRoles } = require('../middlewares/auth');
 const { userValidation } = require('../validations');
+const { roleValues } = require('../config/roles');
 const validate = require('../middlewares/validate');
 
 const router = Router();
@@ -24,23 +25,23 @@ router.route('/users/delete')
     .delete(isAuthenticated, userController.deleteMyAccount);
 
 router.route('/admin/users')
-    .get(isAuthenticated, authorizeRoles('admin'), userController.getAllUsers);
+    .get(isAuthenticated, authorizeRoles(roleValues.ADMIN), userController.getAllUsers);
 
 router.route('/admin/users/:id')
     .get(
         isAuthenticated,
-        authorizeRoles('admin'),
+        authorizeRoles(roleValues.ADMIN),
         validate(userValidation.getUser),
         userController.getUser
     )
     .delete(
         isAuthenticated,
-        authorizeRoles('admin'),
+        authorizeRoles(roleValues.ADMIN),
         validate(userValidation.deleteUser),
         userController.deleteUser
     );
     
 router.route('/admin/users/ban/:id')
-    .get(isAuthenticated, authorizeRoles('admin'), userController.banUser);
+    .get(isAuthenticated, authorizeRoles(roleValues.ADMIN), userController.banUser);
     
 module.exports = router;

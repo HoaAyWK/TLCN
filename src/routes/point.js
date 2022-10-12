@@ -3,6 +3,7 @@ const { Router } = require('express');
 const { isAuthenticated, authorizeRoles } = require('../middlewares/auth');
 const pointController = require('../controllers/pointController');
 const { pointValidation } = require('../validations');
+const { roleValues } = require('../config/roles');
 const validate = require('../middlewares/validate');
 
 const router = Router();
@@ -16,7 +17,7 @@ router.route('/admin/points/create')
     .post(
         validate(pointValidation.createPoint),
         isAuthenticated,
-        authorizeRoles('admin'),
+        authorizeRoles(roleValues.ADMIN),
         pointController.createPoint
     );
 
@@ -24,7 +25,7 @@ router.route('/admin/points/:id')
     .delete(
         validate(pointValidation.deletePoint),
         isAuthenticated,
-        authorizeRoles('admin'),
+        authorizeRoles(roleValues.ADMIN),
         pointController.deletePoint
     );
 

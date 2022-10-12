@@ -1,11 +1,12 @@
 const ApiError = require('../utils/ApiError');
 const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
-const { jobService } = require('../services');
+const { jobService, userService } = require('../services');
 const pick = require('../utils/pick');
+const { sendEmailService } = require('../services');
 
 const getJobs = catchAsyncErrors(async (req, res, next) => {
     const filter = pick(req.query, ['name', 'status']);
-    const options = pick(req.query, ['sortBy', 'limit', 'page']);
+    const options = pick(req.query, ['sortBy', 'limit', 'page', 'exclude']);
     const result = await jobService.getJobs(filter, options);
 
     res.status(200).json({
@@ -30,6 +31,19 @@ const getJob = catchAsyncErrors(async (req, res, next) => {
 
 const getJobDetails = catchAsyncErrors(async (req, res, next) => {
     const job = await jobService.getJobDetails(req.params.id);
+
+    if (!job) {
+        throw new ApiError(404, 'Job not found');
+    }
+
+    res.status(200).json({
+        success: true,
+        job
+    });
+});
+
+const getJobWithOffers = catchAsyncErrors(async (req, res, next) => {
+    const job = await jobService.getJobWithOffers(req.params.id);
 
     if (!job) {
         throw new ApiError(404, 'Job not found');
@@ -84,12 +98,28 @@ const cancelOffer = catchAsyncErrors(async (req, res, next) => {
 });
 
 const selectFreelancer = catchAsyncErrors(async (req, res, next) => {
-    await jobService.selectFreelancer(req.params.id, req.body);
+    const job = await jobService.selectFreelancer(req.user.id, req.params.id, req.body.offerId);
+    const freelancer = await userService.getUserById(job.assignment.freelancer);
 
-    res.status(200).json({
-        success: true,
-        message: `Email sent to: ${freelancer.email}`
-    });    
+    const message = `Congratulations, your offer for '${job.title}' has been accepted by the customer`;
+
+    try {
+        await sendEmailService.sendEmail({
+            email: freelancer.email,
+            subject: 'Your offer has been accepted',
+            message
+        });
+
+        res.status(200).json({
+            success: true,
+            message: `Email sent to: ${freelancer.email}`
+        });  
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    } 
 });
 
 const getMyOfferJobs = catchAsyncErrors(async (req, res, next) => {
@@ -97,7 +127,25 @@ const getMyOfferJobs = catchAsyncErrors(async (req, res, next) => {
 
     res.status(200).json({
         success: true,
-        jobs: offers
+        offers
+    });
+});
+
+const submitAssigment = catchAsyncErrors(async (req, res, next) => {
+    const job = await jobService.submitAssigment(req.params.id, req.body.assignment);
+
+    res.status(200).json({
+        success: true,
+        job
+    });
+});
+
+const finishAssignment = catchAsyncErrors(async (req, res, next) => {
+    await jobService.finishAssignment(req.user.id, req.params.id);
+
+    res.status(200).json({ 
+        success: true,
+        message: 'Assignment completed'
     });
 });
 
@@ -105,10 +153,13 @@ module.exports = {
     getJobs,
     getJob,
     getJobDetails,
+    getJobWithOffers,
     createJob,
     deleteJob,
     offerJob,
     cancelOffer,
     selectFreelancer,
-    getMyOfferJobs
+    getMyOfferJobs,
+    submitAssigment,
+    finishAssignment
 }
