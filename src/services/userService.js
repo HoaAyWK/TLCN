@@ -86,6 +86,19 @@ const changePassword = async (id, oldPassword, newPassword) => {
     return user;
 };
 
+const purchasePoints = async (id, points) => {
+    const user = await User.findById(id);
+
+    if (!user) {
+        throw new ApiError(404, 'User not found');
+    }
+
+    user.points = user.points + points;
+    await user.save();
+
+    return user;
+};
+
 const updateUserById = async (id, updateBody) => {
     const user = await User.findById(id);
 
@@ -154,6 +167,7 @@ module.exports = {
     getUserById,
     getUserWithPasswordById,
     getUserDetails,
+    purchasePoints,
     changeUserStatus,
     changePassword,
     updateUserById,
