@@ -85,16 +85,22 @@ const deleteJob = async (id, userId) => {
 
 const offerJob = async (jobId, offerBody) => {
     const { freelancerId, amount, message } = offerBody;
-    const freelancer = await User.findById(freelancerId).lean();
+    const freelancer = await User.findById(freelancerId);
 
     if (!freelancer) {
         throw new ApiError(404, 'User not found');
     }
 
-    const offerExist = await Offer.findOne({ freelancer: freelancerId, job: jobId }).lean();
+    const job = await Job.findById(jobId);
 
-    if (offerExist) {
-        throw new ApiError(400, 'You already sent an offer to this job');
+    if (!job) {
+        throw new ApiError(404, 'Job not found');
+    }
+
+    for (let offer of job.offers) {
+        if (offer.freelancer.toString() === freelancerId) {
+            throw new ApiError(400, 'You already sent an offer to this job');
+        }
     }
 
     const pointsRequire = 0.3 * amount;
@@ -102,62 +108,34 @@ const offerJob = async (jobId, offerBody) => {
     if (freelancer.points < pointsRequire) {
         throw new ApiError(400, `To offer this job, you must have at least ${pointsRequire} points (30% offer you provide) in your account`);
     }
-
-    const session = await startSession();
-    session.startTransaction();
-
-    try {
-        const offer = await Offer.create([{ freelancer: freelancerId, job: jobId, amount, message }], { session });
-        const job = await Job.findById(jobId).session(session);
-
-        if (!job) {
-            throw new ApiError(404, 'Job not found');
-        }
-        
-        job.offers.push(offer[0]._id);
-        await job.save();
-        await session.commitTransaction();
-    } catch (error) {
-        await session.abortTransaction();
-        throw new ApiError(error.status, error.message);
-    } finally {
-        await session.endSession();
-    } 
+    
+    job.offers.push({ freelancer: freelancerId, amount, message });
+    await job.save();
 };
 
-const cancelOffer = async (jobId, freelancerId) => {
-    const session = await startSession();
-    session.startTransaction();
+const cancelOffer = async (jobId, freelancerId, offerId) => {    
+    const job = await Job.findById(jobId);
 
-    try {
-        const offer = await Offer.findOne({ freelancer: freelancerId, job: jobId }).session(session);
-        
-        if (!offer) {
-            throw new ApiError(404, 'Offer not found');
-        }
-    
-        if (offer.isAccepted) {
-            throw new ApiError(400, 'Job is in progess');
-        }
-        
-        const job = await Job.findById(jobId).session(session);
-
-        if (!job) {
-            throw new ApiError(404, 'Job not found');
-        }
-
-        const offerObjectId = new mongoose.Types.ObjectId(offer.id);
-        job.offers.filter(offer => offer.toString() !== offerObjectId.toString());
-
-        await job.save();
-        await offer.remove();
-        await session.commitTransaction();
-    } catch (error) {
-        await session.abortTransaction();
-        throw new ApiError(error.status, error.mesaage);
-    } finally {
-        await session.endSession();
+    if (!job) {
+        throw new ApiError(404, 'Job not found');
     }
+
+    const offer = job.offers.id(offerId);
+
+    if (!offer) {
+        throw new ApiError(400, 'You have not yet sent an offer for this job');
+    }
+
+    if (offer.freelancer.toString() !== freelancerId) {
+        throw new ApiError(400, `You can not cancel another freelancer's offer`);
+    }
+
+    if (offer.isAccepted) {
+        throw new ApiError(400, 'Your offer already accepted, can not cancel it');
+    }
+
+    await offer.remove();
+    await job.save();
 };
 
 const selectFreelancer = async (userId, jobId, offerId) => {
@@ -175,9 +153,7 @@ const selectFreelancer = async (userId, jobId, offerId) => {
             throw new ApiError(404, 'Job not found');
         }
 
-        const userObjectId = new mongoose.Types.ObjectId(userId);
-
-        if (job.owner.toString() !== userObjectId.toString()) {
+        if (job.owner.toString() !== userId) {
             throw new ApiError(400, 'You are not the owner of this job');
         }
 
@@ -185,7 +161,7 @@ const selectFreelancer = async (userId, jobId, offerId) => {
             throw new ApiError(400, 'This job already in progess');
         }
 
-        const offer = await Offer.findById(offerId).session(session);
+        const offer = job.offers.id(offerId);
 
         if (!offer) {
             throw new ApiError(400, 'Can not find any freelancer offer that matches the one you provide');
@@ -209,7 +185,6 @@ const selectFreelancer = async (userId, jobId, offerId) => {
             throw new ApiError(400, `To start the job, you must have at least ${amount} points (30% offer) in your account`);
         }
         
-        freelancer.jobTakens.push(jobId);
         freelancer.points = freelancer.points - amount;
         employer.points = employer.points - amount;
         offer.isAccepted = true;
@@ -223,31 +198,22 @@ const selectFreelancer = async (userId, jobId, offerId) => {
             fund: amount * 2
         }
         
-        await offer.save();
         await job.save();
         await freelancer.save();
         await employer.save();
-
         await session.commitTransaction();    
-        session.endSession();
-
+        
         return job;
     } catch (error) {
         await session.abortTransaction();
-        await session.endSession();
         throw new ApiError(error.status, error.message);
+    } finally {
+        await session.endSession();
     }
 };
 
 const getMyOfferJobs = async (userId) => {
-    const offer = await Offer.find({ freelancer: userId }, '-freelancer -__v -_id')
-        .populate({ path: 'job', select: '-assignment' });
-
-    if (!offer) {
-        throw new ApiError(404, 'Offer not found');
-    }
-
-    return offer;
+    return await Job.find({ 'offers.freelancer': userId }, '-assignment');
 };
 
 const submitAssigment = async (jobId, assignmentUrl) => {
@@ -263,7 +229,7 @@ const submitAssigment = async (jobId, assignmentUrl) => {
     return job;
 };
 
-const finishAssignment = async (userId, jobId) => {
+const finishAssignment = async (userId, jobId, offerId) => {
     const session = await startSession();
     session.startTransaction();
 
@@ -275,16 +241,9 @@ const finishAssignment = async (userId, jobId) => {
         }
 
         const employer = await User.findById(userId).session(session);
-        const employerObjectId = mongoose.Types.ObjectId(employer.id);
 
-        if (job.owner.toString() !== employerObjectId.toString()) {
+        if (job.owner.toString() !== userId) {
             throw new ApiError(400, 'You are not the owner of this job');
-        }
-
-        const offer = await Offer.findOne({ freelancer: job.assignment.freelancer, job: jobId }).lean();
-        
-        if (!offer) {
-            throw new ApiError(404, 'Offer not found');
         }
 
         const freelancer = await User.findById(job.assignment.freelancer).session(session);
@@ -293,11 +252,27 @@ const finishAssignment = async (userId, jobId) => {
             throw new ApiError(404, 'Freelancer not found');
         }
 
-        job.status = 'Closed';
+        const offer = job.offers.id(offerId);
+
+        if (!offer) {
+            throw new ApiError(404, 'Offer not found');
+        }
+
+        if (!offer.isAccepted) {
+            throw new ApiError(400, 'This offer is not accepted yet');
+        }
+
+        const pay = 0.7 * offer.amount;
+        const employerRemainPoints = employer.points - pay;
+
+        if (employerRemainPoints < 0) {
+            throw new ApiError(400, `Your account does not have enough points, this job need ${pay} points to finish`);
+        }
+
+        freelancer.points = freelancer.points + job.assignment.fund + 0.65 * offer.amount;
+        employer.points = employerRemainPoints;
         job.assignment.fund = 0;
-        
-        freelancer.points = freelancer.points + 0.95 * offer.amount;
-        employer.points = employer.points - 0.5 * offer.amount;
+        job.status = 'Closed';
 
         await job.save();
         await freelancer.save();

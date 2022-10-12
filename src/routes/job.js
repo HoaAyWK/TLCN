@@ -21,14 +21,14 @@ router.route('/jobs/create')
 
 // Employer selects a freelancer to do the job
 router.route('/jobs/:id/freelancer')
-    .post(
+    .put(
         isAuthenticated,
         authorizeRoles(roleValues.EMPLOYER),
         jobController.selectFreelancer
     );
 
 // Freelancer offers the job
-router.route('/jobs/offer/:id')
+router.route('/jobs/:id/offer')
     .post(
         isAuthenticated,
         authorizeRoles(roleValues.FREELANCER),
@@ -36,7 +36,7 @@ router.route('/jobs/offer/:id')
     );
 
 // Freelancer cancels the offer
-router.route('/jobs/offer/cancel/:id')
+router.route('/jobs/:id/offer/cancel')
     .delete(
         isAuthenticated,
         authorizeRoles(roleValues.FREELANCER),

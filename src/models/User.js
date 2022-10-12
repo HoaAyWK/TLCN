@@ -69,11 +69,6 @@ const userSchema = new mongoose.Schema({
     country: String,
     introduction: String,
     experience: String,
-    jobTakens: {
-        type: [mongoose.Schema.Types.ObjectId],
-        ref: 'Job',
-        default: []
-    },
     points: {
         type: Number,
         default: 0.0,

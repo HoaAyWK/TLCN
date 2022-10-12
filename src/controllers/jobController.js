@@ -89,7 +89,7 @@ const offerJob = catchAsyncErrors(async (req, res, next) => {
 });
 
 const cancelOffer = catchAsyncErrors(async (req, res, next) => {
-    await jobService.cancelOffer(req.params.id, req.user.id);
+    await jobService.cancelOffer(req.params.id, req.user.id, req.query.offer);
 
     res.status(200).json({
         success: true,
@@ -98,28 +98,34 @@ const cancelOffer = catchAsyncErrors(async (req, res, next) => {
 });
 
 const selectFreelancer = catchAsyncErrors(async (req, res, next) => {
-    const job = await jobService.selectFreelancer(req.user.id, req.params.id, req.body.offerId);
+    const jobId = req.params.id;
+    const job = await jobService.selectFreelancer(req.user.id, jobId, req.body.offerId);
     const freelancer = await userService.getUserById(job.assignment.freelancer);
 
-    const message = `Congratulations, your offer for '${job.title}' has been accepted by the customer`;
+    // const message = `Congratulations, your offer for '${job.title}' has been accepted by the customer`;
 
-    try {
-        await sendEmailService.sendEmail({
-            email: freelancer.email,
-            subject: 'Your offer has been accepted',
-            message
-        });
+    // try {
+    //     await sendEmailService.sendEmail({
+    //         email: freelancer.email,
+    //         subject: 'Your offer has been accepted',
+    //         message
+    //     });
 
-        res.status(200).json({
-            success: true,
-            message: `Email sent to: ${freelancer.email}`
-        });  
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    } 
+    //     res.status(200).json({
+    //         success: true,
+    //         message: `Email sent to: ${freelancer.email}`
+    //     });  
+    // } catch (error) {
+    //     res.status(500).json({
+    //         success: false,
+    //         message: error.message
+    //     });
+    // } 
+
+    res.status(200).json({
+        succeess: true,
+        message: 'Selected freelancer'
+    })
 });
 
 const getMyOfferJobs = catchAsyncErrors(async (req, res, next) => {
@@ -141,9 +147,9 @@ const submitAssigment = catchAsyncErrors(async (req, res, next) => {
 });
 
 const finishAssignment = catchAsyncErrors(async (req, res, next) => {
-    await jobService.finishAssignment(req.user.id, req.params.id);
+    await jobService.finishAssignment(req.user.id, req.params.id, req.query.offerId);
 
-    res.status(200).json({ 
+    res.status(200).json({
         success: true,
         message: 'Assignment completed'
     });
