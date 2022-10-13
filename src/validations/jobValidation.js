@@ -14,6 +14,28 @@ const createJob = {
     })
 };
 
+const addComment = {
+    params: Joi.object().keys({
+        id: Joi.required().custom(objectId)
+    }),
+    body: Joi.object().keys({
+        partnerId: Joi.required().custom(objectId),
+        rating: Joi.number().required(),
+        content: Joi.string().required()
+    })
+};
+
+const deleteComment = {
+    params: Joi.object().keys({
+        id: Joi.required().custom(objectId)
+    }),
+    query: Joi.object().keys({
+        partner: Joi.required().custom(objectId)
+    })
+};
+
 module.exports = {
-    createJob
+    createJob,
+    addComment,
+    deleteComment
 };
