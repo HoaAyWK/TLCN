@@ -89,7 +89,17 @@ router.route('/jobs/:id/comment')
     .post(
         isAuthenticated,
         authorizeRoles(roleValues.FREELANCER, roleValues.EMPLOYER),
+        validate(jobValidation.addComment),
         jobController.addComment
+    );
+
+// Employer/Freelancer deletes an comment
+router.route('/jobs/comment/:id')
+    .delete(
+        isAuthenticated,
+        authorizeRoles(roleValues.FREELANCER, roleValues.EMPLOYER),
+        validate(jobValidation.deleteComment),
+        jobController.deleteComment
     );
 
 // Admin views the job details
@@ -98,13 +108,6 @@ router.route('/admin/jobs/:id')
         isAuthenticated,
         authorizeRoles(roleValues.ADMIN),
         jobController.getJob
-    );
-
-router.route('/jobs/comment/:id')
-    .delete(
-        isAuthenticated,
-        authorizeRoles(roleValues.FREELANCER, roleValues.EMPLOYER),
-        jobController.deleteComment
     );
 
 module.exports = router;
