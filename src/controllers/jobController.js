@@ -155,6 +155,24 @@ const finishAssignment = catchAsyncErrors(async (req, res, next) => {
     });
 });
 
+const addComment = catchAsyncErrors(async (req, res, next) => {
+    const comments = await jobService.addComment(req.user.id, req.params.id, req.body);
+
+    res.status(200).json({
+        success: true,
+        comments
+    });
+});
+
+const deleteComment = catchAsyncErrors(async (req, res, next) => {
+    const partner = await jobService.deleteComment(req.user.id, req.query.partner, req.params.id);
+
+    res.status(200).json({
+        success: true,
+        partner
+    });
+});
+
 module.exports = {
     getJobs,
     getJob,
@@ -167,5 +185,7 @@ module.exports = {
     selectFreelancer,
     getMyOfferJobs,
     submitAssigment,
-    finishAssignment
+    finishAssignment,
+    addComment,
+    deleteComment
 }

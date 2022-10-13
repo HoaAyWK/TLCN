@@ -1,8 +1,42 @@
 const { compare, hash } = require('bcryptjs');
 const mongoose = require('mongoose');
 const validator = require('validator');
+const { roleValues } = require('../config/roles');
 
 const { paginate, toJSON } = require('./plugins');
+
+const commentSchema = new mongoose.Schema({
+    rating: {
+        type: Number,
+        min: [0, 'Rating minimum is 0'],
+        max: [5, 'Rating maximum is 5'],
+        required: true
+    },
+    job: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Job',
+        required: true
+    },
+    jobName: {
+        type: String,
+        required: true
+    },
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    userName: {
+        type: String,
+        required: true
+    },
+    content: {
+        type: String,
+        required: [true, 'Content is required']
+    }
+});
+
+commentSchema.plugin(toJSON);
 
 const userSchema = new mongoose.Schema({
     email: {
@@ -73,7 +107,14 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0.0,
         required: true
-    }
+    },
+    ratings: {
+        type: Number,
+        default: 0
+    },
+    comments: [
+        commentSchema
+    ]
 }, { timestamps: true });
 
 userSchema.plugin(toJSON);

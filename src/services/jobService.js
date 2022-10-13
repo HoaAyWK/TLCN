@@ -284,6 +284,112 @@ const finishAssignment = async (userId, jobId, offerId) => {
     }
 };
 
+const addComment = async (userId, jobId, commentBody) => {
+    const { rating, content, partnerId } = commentBody;
+
+    const author = await User.findById(userId).lean();
+
+    if (!author) {
+        throw new ApiError(401, 'You are not logged in');
+    }
+
+    const partner = await User.findById(partnerId);
+
+    if (!partner) {
+        throw new ApiError('Partner not found');
+    }
+
+    const job = await Job.findById(jobId).lean();
+
+    if (!job) {
+        throw new ApiError(404, 'Job not found');
+    }
+
+    if (partner.roles.includes(roleValues.EMPLOYER)) {
+        if (job.assignment.freelancer && job.assignment.freelancer.toString() !== userId) {
+            throw new ApiError(400, 'You can not write comment for the employer with who you are not working');
+        }
+    } else {
+        if (job.owner.toString() !== userId) {
+            throw new ApiError(400, 'You are not the owner of this job');
+        }
+
+        if (job.assignment.freelancer && job.assignment.freelancer.toString() !== partnerId) {
+            throw new ApiError(400, 'You can not write comment for the freelancer with who you are not working');
+        }
+    }
+
+    const comment = {
+        rating,
+        content,
+        job: jobId,
+        jobName: job.name,
+        user: userId,
+        userName: author.name
+    };
+
+    const commentExist = await User.findOne({
+            'comments.job': jobId,
+            'comments.user': userId
+        })
+        .lean();
+    
+    if (commentExist) {
+        partner.comments.forEach(cmt => {
+            if (cmt.user.toString() === userId && cmt.job.toString() === jobId) {
+                cmt.rating = rating;
+                cmt.content = content;
+            }
+        })
+    } else {
+        partner.comments.push(comment);
+    }
+
+    partner.ratings = partner.comments.reduce((acc, item) => item.rating + acc, 0) / partner.comments.length;
+
+    await partner.save();
+    
+    return partner.comments;
+};
+
+const deleteComment = async (userId, partnerId, commentId) => {
+    const author = await User.findById(userId).lean();
+
+    if (!author) {
+        throw new ApiError(401, 'You are not logged in');
+    }
+
+    const partner = await User.findById(partnerId);
+
+    if (!partner) {
+        throw new ApiError(404, 'Partner not found');
+    }
+
+    const comment = partner.comments.id(commentId);
+
+    if (!comment) {
+        throw new ApiError(404, 'Comment not found');
+    }
+
+    if (comment.user.toString() !== userId) {
+        throw new ApiError(400, 'You are not the owner of this comment');
+    }
+
+    await comment.remove();
+
+    const numOfComments = partner.comments.length;
+
+    if (numOfComments > 0) {
+        partner.ratings = partner.comments.reduce((acc, item) => item.rating + acc, 0) / numOfComments;
+    } else {
+        partner.ratings = 0;
+    }
+
+    await partner.save();
+
+    return partner;
+};
+
 module.exports = {
     getJobs,
     getJob,
@@ -296,5 +402,7 @@ module.exports = {
     getMyOfferJobs,
     getJobWithOffers,
     submitAssigment,
-    finishAssignment
+    finishAssignment,
+    addComment,
+    deleteComment
 };

@@ -43,5 +43,8 @@ router.route('/admin/users/:id')
     
 router.route('/admin/users/ban/:id')
     .get(isAuthenticated, authorizeRoles(roleValues.ADMIN), userController.banUser);
+
+router.route('/users/:id/comments')
+    .get(userController.getCommentsByUser);
     
 module.exports = router;
