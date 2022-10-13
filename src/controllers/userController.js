@@ -97,6 +97,15 @@ const deleteMyAccount = catchAsyncErrors(async (req, res, next) => {
     });
 });
 
+const getCommentsByUser = catchAsyncErrors(async (req, res, next) => {
+    const comments = await userService.getCommentsByUserId(req.params.id);
+
+    res.status(200).json({
+        success: true,
+        comments
+    });
+});
+
 module.exports = {
     getAllUsers,
     getUser,
@@ -106,4 +115,5 @@ module.exports = {
     banUser,
     deleteUser,
     deleteMyAccount,
+    getCommentsByUser,
 };

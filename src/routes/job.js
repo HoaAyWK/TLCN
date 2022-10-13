@@ -84,12 +84,27 @@ router.route('/jobs/:id/finish')
         jobController.finishAssignment
     );
 
+// Employer/Freelancer writes comment for the partner
+router.route('/jobs/:id/comment')
+    .post(
+        isAuthenticated,
+        authorizeRoles(roleValues.FREELANCER, roleValues.EMPLOYER),
+        jobController.addComment
+    );
+
 // Admin views the job details
 router.route('/admin/jobs/:id')
     .delete(
         isAuthenticated,
         authorizeRoles(roleValues.ADMIN),
         jobController.getJob
+    );
+
+router.route('/jobs/comment/:id')
+    .delete(
+        isAuthenticated,
+        authorizeRoles(roleValues.FREELANCER, roleValues.EMPLOYER),
+        jobController.deleteComment
     );
 
 module.exports = router;

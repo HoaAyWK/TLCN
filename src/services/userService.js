@@ -158,6 +158,12 @@ const deleteUser = async (id) => {
     return user;
 };
 
+const getCommentsByUserId = async (userId) => {
+    const user = await User.findById(userId);
+
+    return user.comments;
+};
+
 module.exports = {
     create,
     queryUsers,
@@ -171,5 +177,6 @@ module.exports = {
     changeUserStatus,
     changePassword,
     updateUserById,
-    deleteUser
+    deleteUser,
+    getCommentsByUserId
 };
